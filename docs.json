@@ -1,0 +1,74 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "LlamaLibrary",
+  "theme": "maple",
+  "logo": {
+    "light": "https://media.brand.dev/e5ca5913-0c53-4bd5-9968-5db95f078b4a.webp",
+    "dark": "https://media.brand.dev/e5ca5913-0c53-4bd5-9968-5db95f078b4a.webp"
+  },
+  "favicon": "https://media.brand.dev/71c13cf7-84b7-411b-98d8-fe8843249bd5.svg",
+  "colors": {
+    "primary": "#de8f4b",
+    "light": "#8e9090",
+    "dark": "#38294c"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/nt153133/__LlamaLibrary"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/botbase-vs-plugin",
+              "concepts/runtime-vs-nuget",
+              "concepts/safe-mode"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/create-botbase",
+              "guides/create-plugin",
+              "guides/retainer-automation",
+              "guides/navigation-travel",
+              "guides/script-conditions"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/helpers-overview",
+              "reference/remote-windows",
+              "reference/extensions",
+              "reference/settings",
+              "reference/logging"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "resources/faq",
+              "resources/troubleshooting",
+              "resources/changelog"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

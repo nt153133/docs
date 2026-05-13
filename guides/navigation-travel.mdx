@@ -1,0 +1,152 @@
+---
+title: "Navigate and Travel in FFXIV with LlamaLibrary"
+description: "Use TeleportHelper, Navigation, WorldTravel, and HousingHelper to automate aetheryte teleports, zone pathing, world travel, and housing district navigation."
+---
+
+LlamaLibrary provides a layered set of navigation utilities covering everything from single-zone movement to cross-world travel. `TeleportHelper` handles aetheryte teleportation; `Navigation.GetTo()` handles multi-step pathing within and between zones using NavGraph; `WorldTravel.GoToWorld()` crosses to other worlds on the same data center; and `HousingHelper` exposes housing position data for use with the housing traveler. Each layer calls into the ones below it, so you can use them independently or together.
+
+## Teleporting to aetherytes
+
+`TeleportHelper` wraps the game's teleportation system. It maintains a cached array of `TeleportInfo` structs — one per aetheryte the player has attuned to — and exposes several convenience methods for common destinations.
+
+```csharp
+using LlamaLibrary.Helpers;
+
+// Teleport to your apartment (requires an apartment to be registered)
+bool success = await TeleportHelper.TeleportToApartment();
+
+// Teleport to your private estate
+await TeleportHelper.TeleportToPrivateEstate();
+
+// Teleport to your free company estate
+await TeleportHelper.TeleportToFreeCompanyEstate();
+
+// Teleport to a shared estate by index (0-based)
+await TeleportHelper.TeleportToSharedEstate(0);
+```
+
+The `TeleportList` property returns the current array of `TeleportInfo` structs. It refreshes automatically after five minutes or when the player returns to their home world:
+
+```csharp
+TeleportInfo[] list = TeleportHelper.TeleportList;
+foreach (var entry in list)
+{
+    Log.Information($"{entry.ZoneName} — AE ID: {entry.AetheryteId}");
+}
+```
+
+Call `TeleportHelper.UpdateTeleportArray()` to force an immediate refresh, for example after zoning:
+
+```csharp
+TeleportHelper.UpdateTeleportArray();
+```
+
+To teleport by aetheryte ID directly, use `TeleportHelper.TeleportByIdTicket(uint aetheryteId)`. This method uses the aetheryte ticket system (gil or ticket, whichever is configured) and waits for the loading screen to complete before returning:
+
+```csharp
+await TeleportHelper.TeleportByIdTicket(8); // Limsa Lominsa Lower Decks
+```
+
+## Zone navigation
+
+`Navigation.GetTo()` is the primary pathing method. Given a zone ID and a `Vector3` destination, it queries the NavGraph service for a path, teleports to the nearest aetheryte if needed, and then moves the player along the computed path:
+
+```csharp
+using LlamaLibrary.Helpers;
+using Clio.Utilities;
+
+// Navigate to a position in the current or a different zone
+bool arrived = await Navigation.GetTo(129, new Vector3(-223.74f, 16.0f, 41.3f));
+
+// Convenience overload with individual float components
+await Navigation.GetTo(129, -223.74f, 16.0f, 41.3f);
+```
+
+If the NavGraph cannot find a ground path, `GetTo` falls back to `Flightor` for aerial movement. Housing zones are detected automatically and routed through the `HousingTraveler` helper instead.
+
+For movement within the current zone when you only need aerial pathing, use `Navigation.FlightorMove(Vector3 loc)`:
+
+```csharp
+await Navigation.FlightorMove(new Vector3(0f, 100f, 0f));
+```
+
+For ground-only movement with a custom stopping distance, use `Navigation.GroundMove(Vector3 loc, float distance)`.
+
+## World travel
+
+`WorldTravel.GoToWorld()` travels to another world on the same data center. It teleports to a city (Limsa, Ul'dah, or Gridania — cheapest by default), opens the world travel menu via `AgentWorldTravelSelect`, selects the target world, confirms the prompt, and waits for the zone transition to complete.
+
+```csharp
+using LlamaLibrary.Helpers.WorldTravel;
+using LlamaLibrary.Enums;
+
+// Travel to a specific world by enum value
+bool traveled = await WorldTravel.GoToWorld(World.Balmung);
+
+// Return to your home world
+await WorldTravel.MakeSureHome();
+```
+
+`WorldTravel.MakeSureHome()` checks whether the player is already on their home world and returns immediately if so — it is safe to call as a precondition at the start of any routine that requires the home world.
+
+You can also navigate to a `WorldLocation` (a world + zone + coordinates bundle) in a single call:
+
+```csharp
+await WorldTravel.GetTo(new WorldLocation(World.Balmung, someLocation));
+```
+
+`Navigation.GetTo(World world, uint zoneId, Vector3 xyz)` and `Navigation.GetTo(WorldLocation worldLocation)` provide the same behavior from the `Navigation` class if you prefer a single entry point.
+
+## Housing navigation
+
+`HousingHelper` reads housing position data from game memory and exposes it as typed properties. You can use it to determine whether the player is in a housing area, which plot they are on, and where their registered residences are.
+
+```csharp
+using LlamaLibrary.Helpers.Housing;
+
+// Check if the player is currently in a housing district
+bool inHousing = HousingHelper.IsInHousingArea;
+
+// Check if the player is inside their house (indoors)
+bool insideHouse = HousingHelper.IsInsideHouse;
+
+// Get the player's personal estate location (ward and plot)
+HouseLocation? estate = HousingHelper.PersonalEstate;
+HouseLocation? fcEstate = HousingHelper.FreeCompanyEstate;
+```
+
+`HousingHelper.Residences` returns all registered `ResidenceInfo` entries (up to six) including private estates, free company estates, and shared estates. The array refreshes every five minutes or when the player returns to their home world.
+
+When `Navigation.GetTo()` is given a housing zone ID (e.g., Mist, The Lavender Beds, The Goblet), it automatically delegates to `HousingTraveler.GetToResidential()` to handle the ward selection UI that appears when entering housing districts.
+
+## WorldHelper
+
+`WorldHelper` provides static properties for checking the player's current and home world without having to read raw memory values yourself:
+
+```csharp
+using LlamaLibrary.Helpers;
+
+// The world the player is currently on
+World current = WorldHelper.CurrentWorld;
+
+// The player's home world
+World home = WorldHelper.HomeWorld;
+
+// Numeric IDs
+int currentId = WorldHelper.CurrentWorldId;
+int homeId = WorldHelper.HomeWorldId;
+
+// Whether the player is currently on their home world
+bool onHome = WorldHelper.IsOnHomeWorld;
+```
+
+These properties are used internally by `TeleportHelper`, `WorldTravel`, and `HousingHelper` to decide when to refresh cached data, so you can rely on them being accurate during normal play.
+
+<Note>
+All movement and teleport helpers in LlamaLibrary require RebornBuddy's navigation service to be running. `TemplateBotBase.Start()` configures `Navigator.PlayerMover` and `Navigator.NavigationProvider` automatically. If you are calling navigation helpers from a plugin or from a botbase that does not use `TemplateBotBase`, initialize the navigation provider yourself before calling `GetTo()` or any movement helper:
+
+```csharp
+Navigator.PlayerMover = new SlideMover();
+Navigator.NavigationProvider = new ServiceNavigationProvider();
+```
+</Note>

@@ -1,0 +1,112 @@
+---
+title: "Get Started Building FFXIV Botbases with LlamaLibrary"
+description: "Build your first RebornBuddy botbase or plugin using LlamaLibrary's TemplateBotBase and TemplatePlugin classes in a few simple steps."
+---
+
+LlamaLibrary ships two template base classes — `TemplateBotBase` and `TemplatePlugin` — that handle all of the RebornBuddy wiring so you can focus on your logic immediately. `TemplateBotBase` sets up navigation, the behavior tree root, logging, and an optional settings form for you. All you need to provide is a name, a log color, and a `Run()` method. This guide walks you through creating a minimal botbase from scratch and calling your first helper.
+
+## Create a botbase
+
+<Steps>
+  <Step title="Create a class library project">
+    In Visual Studio, create a new **Class Library** project targeting **.NET Framework** (the version compatible with your RebornBuddy installation — typically .NET Framework 4.7.2 or later). RebornBuddy does not load .NET 5+ assemblies.
+  </Step>
+  <Step title="Add the LlamaLibrary NuGet package">
+    In the Package Manager Console, run:
+
+    ```bash
+    dotnet add package LlamaLibrary
+    ```
+
+    Or search for `LlamaLibrary` in the Visual Studio NuGet Package Manager UI. This gives you compile-time access to all LlamaLibrary types and IDE completion. See [Installation](installation) for more options.
+  </Step>
+  <Step title="Implement TemplateBotBase">
+    Create a new class file and extend `TemplateBotBase`. You must implement `BotBaseName` and `Run()`. Overriding `LogColor` is optional but recommended so your output is easy to spot in the RebornBuddy log.
+
+    ```csharp
+    using LlamaLibrary;
+    using System.Threading.Tasks;
+    using System.Windows.Media;
+
+    public class MyBotBase : TemplateBotBase
+    {
+        protected override string BotBaseName => "MyBotBase";
+        protected override Color LogColor => Colors.Aqua;
+
+        protected override async Task<bool> Run()
+        {
+            // Your bot logic here
+            Log.Information("Bot is running");
+            await Task.Delay(1000);
+            return true;
+        }
+    }
+    ```
+
+    `TemplateBotBase` provides the `Log` field (an `LLogger` instance) automatically. You do not need to construct it yourself. `Run()` is called by the behavior tree on each tick; returning `true` signals that the coroutine ran successfully.
+
+    If you want a settings button in the RebornBuddy UI, override `SettingsForm` to return the `Type` of your Windows Forms settings form:
+
+    ```csharp
+    protected override Type? SettingsForm => typeof(MySettingsForm);
+    ```
+  </Step>
+  <Step title="Build and deploy the DLL">
+    Build your project in Release mode. Copy the resulting `.dll` file into your RebornBuddy `BotBases` folder (or into a subfolder inside `BotBases`, such as `BotBases\MyBotBase\`):
+
+    ```text
+    RebornBuddy
+    +-- BotBases
+        +-- MyBotBase
+            +-- MyBotBase.dll
+    ```
+  </Step>
+  <Step title="Select and start the botbase">
+    Launch RebornBuddy, open the **BotBase** dropdown, and select **MyBotBase**. Click **Start** to run. You should see `"Bot is running"` appear in the log every second.
+  </Step>
+</Steps>
+
+## Calling helpers
+
+LlamaLibrary helpers are static classes in the `LlamaLibrary.Helpers` namespace. Call them directly from your `Run()` method using `await`.
+
+```csharp
+using LlamaLibrary.Helpers;
+using System.Threading.Tasks;
+using System.Windows.Media;
+
+public class MyBotBase : TemplateBotBase
+{
+    protected override string BotBaseName => "MyBotBase";
+    protected override Color LogColor => Colors.Aqua;
+
+    protected override async Task<bool> Run()
+    {
+        // Teleport to the player's apartment
+        await TeleportHelper.TeleportToApartment();
+
+        // Use GeneralFunctions for common game interactions
+        await GeneralFunctions.StopBusy(leaveDuty: false);
+
+        return true;
+    }
+}
+```
+
+A few commonly used namespaces to add to your usings:
+
+| Namespace | What it contains |
+|---|---|
+| `LlamaLibrary.Helpers` | `TeleportHelper`, `GeneralFunctions`, `NavigationHelper`, `InventoryHelpers`, and more |
+| `LlamaLibrary.Retainers` | Retainer automation and venture management |
+| `LlamaLibrary.RemoteWindows` | Typed wrappers around FFXIV in-game windows |
+| `LlamaLibrary.Extensions` | Extension methods on RebornBuddy types |
+| `LlamaLibrary.Logging` | `LLogger` for structured log output |
+
+<Tip>
+  The [Guides](guides/create-botbase) section has detailed walkthroughs for common scenarios, including retainer automation, navigation and travel, and writing script conditions for orderbot profiles.
+</Tip>
+
+<Note>
+  Because LlamaLibrary is loaded from source at runtime, any changes you make to files in `QuestBehaviors\__LlamaLibrary` take effect the next time RebornBuddy loads — you do not need to rebuild LlamaLibrary itself. Changes to your own botbase DLL require a rebuild and a restart of RebornBuddy.
+</Note>

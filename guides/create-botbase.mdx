@@ -1,0 +1,99 @@
+---
+title: "Build a RebornBuddy Botbase with TemplateBotBase"
+description: "Create a fully functional RebornBuddy botbase by subclassing TemplateBotBase from LlamaLibrary, with logging, navigation, and an optional settings form."
+---
+
+`TemplateBotBase` is an abstract base class that handles the RebornBuddy lifecycle plumbing for you — start/stop hooks, navigation provider setup, and the behavior tree root — so you can focus on what your botbase actually does. Subclass it, implement a handful of abstract members, and you have a working botbase.
+
+<Steps>
+  <Step title="Create a .NET class library project">
+    Create a new C# class library targeting the .NET Framework version used by RebornBuddy (typically .NET Framework 4.8). You can do this via Visual Studio or the `dotnet` CLI:
+
+    ```bash
+    dotnet new classlib -n MyBotBase --framework net48
+    ```
+
+    Add references to `ff14bot.exe` (RebornBuddy's core assembly) and any other RebornBuddy assemblies your project needs.
+  </Step>
+
+  <Step title="Add the LlamaLibrary NuGet package">
+    Add the LlamaLibrary NuGet package to your project for compile-time type resolution and IDE completion:
+
+    ```bash
+    dotnet add package LlamaLibrary
+    ```
+
+    See [Installation](/installation) for details on the NuGet package and how it relates to the runtime copy.
+  </Step>
+
+  <Step title="Subclass TemplateBotBase and implement required members">
+    Create a class that extends `TemplateBotBase`. You must provide `BotBaseName`, `LogColor`, and `Run()`. Everything else has sensible defaults.
+
+    ```csharp
+    using System.Threading.Tasks;
+    using System.Windows.Media;
+    using LlamaLibrary;
+
+    public class ExampleBotBase : TemplateBotBase
+    {
+        protected override string BotBaseName => "ExampleBotBase";
+        protected override Color LogColor => Colors.LimeGreen;
+
+        protected override async Task<bool> Run()
+        {
+            Log.Information("Tick");
+            await Task.Delay(500);
+            return true;
+        }
+    }
+    ```
+
+    `Run()` is called on every behavior tree tick. Return `true` to indicate the tick was consumed. The `Log` field is a pre-configured `LLogger` instance ready to use — see the note below.
+  </Step>
+
+  <Step title="Add a settings form (optional)">
+    If your botbase needs configuration UI, create a `System.Windows.Forms.Form` subclass and override `SettingsForm` to return its type. RebornBuddy calls `OnButtonPress()` when the user clicks the botbase button, and `TemplateBotBase` will automatically instantiate and show that form.
+
+    See the [Adding a settings form](#adding-a-settings-form) section below for the exact override.
+  </Step>
+
+  <Step title="Build and install">
+    Build the project in Release mode. Copy the resulting DLL into RebornBuddy's `BotBases` folder. Restart RebornBuddy (or use the reload mechanism) and your botbase will appear in the bot selector.
+  </Step>
+</Steps>
+
+## Adding a settings form
+
+Override the `SettingsForm` property and return the `Type` of your WinForms form. `TemplateBotBase` uses `Activator.CreateInstance` to construct it, so the form must have a public parameterless constructor.
+
+```csharp
+protected override Type? SettingsForm => typeof(MySettingsForm);
+```
+
+When the user clicks the settings button in RebornBuddy, `OnButtonPress()` calls `SettingsForm`, creates an instance if one does not already exist (or was disposed), then calls `Show()` and `Activate()` on it.
+
+## Using helpers inside Run()
+
+LlamaLibrary ships a wide range of static helpers you can call directly from your `Run()` coroutine. Import the relevant namespaces and call the helpers as async methods:
+
+```csharp
+using LlamaLibrary.Helpers;
+using LlamaLibrary.Retainers;
+
+// Inside Run():
+
+// Teleport to your apartment
+await TeleportHelper.TeleportToApartment();
+
+// Check how many inventory slots are occupied
+var filledSlots = GeneralFunctions.MainBagsFilledSlots();
+
+// Navigate to a specific zone and position
+await Navigation.GetTo(129, -223.74f, 16.0f, 41.3f);
+```
+
+You can also call `TeleportHelper.TeleportToPrivateEstate()`, `TeleportHelper.TeleportToFreeCompanyEstate()`, and related methods the same way. See [reference/helpers-overview](/reference/helpers-overview) for the full list of available helpers.
+
+<Note>
+`Log` is a `LLogger` instance that is constructed in `TemplateBotBase`'s constructor via `GetLogger()`, using `BotBaseName` and `LogColor` as its identifier and color. It is available immediately in any method you override, including `Run()`. You do not need to declare or initialize it yourself. Use `Log.Information()`, `Log.Error()`, `Log.Warning()`, `Log.Debug()`, and `Log.Verbose()` freely.
+</Note>

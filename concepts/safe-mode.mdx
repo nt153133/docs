@@ -1,0 +1,65 @@
+---
+title: "LlamaLibrary Safe Mode: Fix Startup Crashes"
+description: "Learn how to enable LlamaLibrary Safe Mode, what initializations it skips, and how to check its state in your botbase or plugin code."
+---
+
+Safe Mode is a startup option that tells LlamaLibrary to skip certain initialization steps that can cause RebornBuddy to crash or hang when the game has been updated and offsets are stale. It is intended as a diagnostic tool: if RebornBuddy fails to start after a game patch, enabling Safe Mode lets you get into a running state so you can investigate the problem without being blocked by the normal warmup sequence.
+
+## Enabling Safe Mode
+
+You can activate Safe Mode in two ways before RebornBuddy loads LlamaLibrary.
+
+<Tabs>
+  <Tab title="Keyboard shortcut">
+    Hold **Shift + Ctrl** on your keyboard while RebornBuddy starts. LlamaLibrary checks the state of both keys during its `PreOffsetWarmup` phase. If both are held at that moment, Safe Mode is activated.
+  </Tab>
+  <Tab title="Command line">
+    Launch RebornBuddy with the `-safemode` argument. LlamaLibrary inspects `Environment.GetCommandLineArgs()` on startup and enables Safe Mode if the flag is present.
+
+    ```text
+    RebornBuddy.exe -safemode
+    ```
+  </Tab>
+</Tabs>
+
+Both methods set the same internal flag. The following code from `LibraryClass.cs` shows exactly how detection works:
+
+```csharp
+if (Environment.GetCommandLineArgs().Contains("-safemode", StringComparer.Ordinal))
+{
+    SafeMode = true;
+}
+if (GetKeyState(VirtualKeyStates.VK_SHIFT) < 0 && GetKeyState(VirtualKeyStates.VK_CONTROL) < 0)
+{
+    SafeMode = true;
+}
+```
+
+## What Safe Mode does
+
+When Safe Mode is enabled, LlamaLibrary writes a `"Safe Mode Enabled"` diagnostic message to the RebornBuddy log and displays a modal dialog box so you know it took effect. The offset warmup steps that would normally run — including client-function scanning and game state initialization — are skipped or reduced. This prevents the crash or hang that can occur when LlamaLibrary tries to resolve offsets that no longer match the current game version.
+
+Running in Safe Mode means that parts of LlamaLibrary which depend on those offsets will not function. You will not be able to use most automation features, but you will be able to launch RebornBuddy, view the log, check plugin state, and diagnose what changed.
+
+## Checking Safe Mode state in code
+
+`LibraryClass.SafeMode` is a static `bool` that reflects whether Safe Mode is active. You can read it anywhere in your botbase or plugin code to skip operations that require full initialization:
+
+```csharp
+if (LibraryClass.SafeMode)
+{
+    Log.Warning("Safe Mode is active — skipping retainer initialization.");
+    return;
+}
+
+// Normal initialization path — proceed with retainer and navigation setup
+await Task.Delay(500);
+```
+
+Checking this property is useful when your plugin or botbase performs work during `OnInitialize` or `OnBotStart` that would throw if game offsets are unavailable.
+
+<Note>
+Safe Mode is only for troubleshooting startup failures after game patches. Do not run your botbase or plugin in Safe Mode during normal use — most features will not work correctly, and automation behavior is undefined.
+</Note>
+
+If Safe Mode does not resolve your startup issue, see the [troubleshooting page](/resources/troubleshooting) for additional diagnostic steps.

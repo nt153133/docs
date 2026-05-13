@@ -1,0 +1,72 @@
+---
+title: "LlamaLibrary Changelog and Update History"
+description: "Track LlamaLibrary updates, learn how to stay current after FFXIV patches, and find out where to view the latest changes and commit history."
+---
+
+LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
+
+## Staying up to date
+
+You have two options for keeping LlamaLibrary current:
+
+**updateBuddy (recommended)**
+
+Install the [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip) plugin into your `Plugins\updateBuddy` folder. Each time RebornBuddy starts, updateBuddy checks the LlamaLibrary GitHub repository for new commits and applies any updates automatically. You do not need to monitor releases or pull changes manually.
+
+**Manual updates**
+
+If you prefer not to use updateBuddy, you can update LlamaLibrary yourself:
+
+1. Download or pull the latest from [https://github.com/nt153133/__LlamaLibrary](https://github.com/nt153133/__LlamaLibrary).
+2. Replace the contents of your `QuestBehaviors\__LlamaLibrary` folder with the new files.
+3. Restart RebornBuddy.
+
+This approach requires you to check for updates yourself, particularly after every FFXIV patch.
+
+## Why updates matter
+
+FFXIV patches routinely change game memory layouts, internal function signatures, and UI structures. LlamaLibrary's offset system reads these memory locations directly to expose game data and trigger game actions. When a patch ships, previously valid offsets may point to wrong locations or no longer exist at all.
+
+Running an outdated version of LlamaLibrary after a game patch can cause:
+
+- RebornBuddy crashes on startup during offset initialization
+- Incorrect or missing data returned from game memory reads
+- Broken interactions with game UI windows and agents
+- Navigation and retainer automation failures
+
+Updating LlamaLibrary immediately after a FFXIV patch is the single most effective step you can take to prevent these problems.
+
+<Warning>
+  Always update LlamaLibrary immediately after every FFXIV patch and before reporting any bug. Many issues that appear to be botbase bugs are caused by stale offsets in an outdated LlamaLibrary installation. Running the latest version rules out the most common cause of breakage.
+</Warning>
+
+## What changes between versions
+
+Updates to LlamaLibrary fall into several recurring categories:
+
+**Offset updates after FFXIV patches**
+The most common type of update. When a game patch changes internal memory structures, offsets throughout LlamaLibrary are recalibrated to match the new layout.
+
+**New remote window wrappers**
+When FFXIV adds or changes game UI windows and agents, LlamaLibrary adds or updates the corresponding remote window and agent wrapper classes so botbases can interact with them.
+
+**New helper functions for game content**
+As new game content ships — new duties, crafting recipes, retainer ventures, Grand Company items — LlamaLibrary gains helper functions and resource data to support automation of that content.
+
+**Bug fixes for retainer, navigation, and crafting helpers**
+Targeted fixes for specific failure modes in the retainer automation, navigation provider integration, and crafting helper subsystems.
+
+**New template class features**
+Improvements to `TemplateBotBase`, `TemplatePlugin`, and related scaffolding — such as new lifecycle hooks, updated logging behavior, or convenience properties.
+
+## Viewing recent commits
+
+To see what has changed recently, browse the commit history on GitHub:
+
+[https://github.com/nt153133/__LlamaLibrary/commits/main](https://github.com/nt153133/__LlamaLibrary/commits/main)
+
+Each commit message describes what was changed. Offset-update commits are typically labeled with the FFXIV patch version they address.
+
+<Tip>
+  If you use updateBuddy, you never need to check the commits page manually. updateBuddy fetches and applies the latest changes on every startup, so your installation is always current.
+</Tip>

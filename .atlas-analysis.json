@@ -1,0 +1,94 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "LlamaLibrary",
+  "projectDescription": "A robust C# support library for building RebornBuddy botbases and plugins for Final Fantasy XIV, providing helper functions, remote window wrappers, retainer automation, navigation utilities, and game data access.",
+  "theme": "maple",
+  "primaryColor": "#de8f4b",
+  "lightColor": "#8e9090",
+  "darkColor": "#38294c",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/botbase-vs-plugin",
+              "concepts/runtime-vs-nuget",
+              "concepts/safe-mode"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/create-botbase",
+              "guides/create-plugin",
+              "guides/retainer-automation",
+              "guides/navigation-travel",
+              "guides/script-conditions"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/helpers-overview",
+              "reference/remote-windows",
+              "reference/extensions",
+              "reference/settings",
+              "reference/logging"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "resources/faq",
+              "resources/troubleshooting",
+              "resources/changelog"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Template botbase and plugin base classes (TemplateBotBase, TemplatePlugin) for rapid RebornBuddy project creation",
+    "Retainer automation helpers including RetainerRoutine, RetainerList, and inventory management",
+    "Navigation and world travel utilities including teleport helpers, housing navigation, and cross-world travel",
+    "Remote window wrappers for 100+ FFXIV UI windows (shops, crafting, grand company, housing, and more)",
+    "Script condition helpers for use in RebornBuddy OrderBot profiles",
+    "Extension methods for BagSlot, LocalPlayer, ClassJob, inventory items, and game objects",
+    "Crafting, gathering, and delivery helper functions",
+    "LLogger structured logging system with color support",
+    "Safe Mode support for troubleshooting startup issues",
+    "NuGet package for compile-time IDE support during development"
+  ],
+  "publicApiSurface": [
+    "TemplateBotBase — abstract base class for botbases",
+    "TemplatePlugin — abstract base class for plugins",
+    "TemplateAsyncBotbase — async variant base class",
+    "ICompiledAsyncBotbase / ICompiledBotbase — interfaces for compiled botbases",
+    "ICompiledPlugin — interface for compiled plugins",
+    "GeneralFunctions — general-purpose FFXIV helper methods",
+    "TeleportHelper — aetheryte and apartment teleport utilities",
+    "Navigation — zone and world travel navigation",
+    "WorldTravel — cross-world travel helpers",
+    "HousingHelper — housing district navigation",
+    "RetainerRoutine — retainer interaction automation",
+    "RetainerList — access to active retainer data",
+    "CraftingHelper — crafting recipe and status helpers",
+    "ScriptConditions.Helpers — condition checks for OrderBot profiles",
+    "LLogger — structured logging with color output",
+    "LlamaLibrarySettings — persistent library settings",
+    "RemoteWindow wrappers (RetainerList, CollectablesShop, GrandCompanyExchange, InclusionShop, etc.)",
+    "Extension methods: BagSlotExtensions, LocalPlayerExtensions, ItemExtensions, ClassJobExtensions"
+  ]
+}

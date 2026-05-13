@@ -1,0 +1,218 @@
+---
+title: "FFXIV UI Window Wrappers Reference for LlamaLibrary"
+description: "LlamaLibrary's RemoteWindows namespace gives you typed C# access to 100+ FFXIV UI windows for reading state and sending actions programmatically."
+---
+
+FFXIV's UI is built from named ATK addon windows. LlamaLibrary wraps over 100 of these windows in typed C# classes so you can read their state and trigger button clicks or selections without writing raw memory or UI action code yourself. Every window class follows the same pattern: a static `Instance` singleton, an `IsOpen` property, and methods that correspond to the interactions you would perform in the game UI.
+
+## Base class
+
+Every window in LlamaLibrary inherits from the generic `RemoteWindow<T>` base class, which itself inherits from the abstract `RemoteWindow` class. Understanding what the base class provides helps you work with any window in the namespace.
+
+```csharp
+// The base class generic variant — all window classes follow this pattern
+public class RemoteWindow<T> : RemoteWindow
+    where T : RemoteWindow<T>, new()
+{
+    public static T Instance { get; } // singleton accessor
+}
+
+public abstract class RemoteWindow
+{
+    public virtual bool IsOpen { get; }         // true when the window is visible in the game UI
+    public virtual string WindowName { get; }   // the internal ATK window name
+    public virtual AgentInterface Agent { get; } // the associated UI agent, if any
+
+    public virtual void Close();                // sends the close action to the window
+    public async Task<bool> WaitTillWindowOpen(int maxTimeOut = 5000); // polls until open
+    public virtual async Task<bool> Open();     // toggles the agent to open the window
+    public void SendAction(int pairCount, params ulong[] param); // sends a raw UI action
+}
+```
+
+`WaitTillWindowOpen` is particularly useful in coroutine-based automation: call it after triggering an NPC interaction or menu selection to pause until the window is ready before reading its contents or clicking buttons.
+
+<Note>
+  Window state is read directly from the game's UI layer. A window reports `IsOpen` as `true` only when it is actually rendered in the client. If the game client lags or a network action is pending, `IsOpen` may be `false` even after you triggered the open. Always use `WaitTillWindowOpen` rather than checking `IsOpen` immediately after an action.
+</Note>
+
+## Available windows
+
+<AccordionGroup>
+  <Accordion title="Retainers">
+    These windows are used during retainer bell interactions.
+
+    | Class | ATK name | Description |
+    |-------|----------|-------------|
+    | `RetainerList` | `RetainerList` | The retainer selection list shown after touching a summoning bell. Exposes `OrderedRetainerList`, `NumberOfRetainers`, `NumberOfVentures`, per-retainer name/level/job, and `SelectRetainer(int index)` / `SelectRetainer(ulong contentId)`. |
+    | `RetainerHistory` | `RetainerHistory` | Shows the history of a retainer's completed ventures. |
+    | `RetainerTaskList` | `RetainerTaskList` | The venture task selection list for a retainer. |
+    | `InventoryBuddy` | `InventoryBuddy` | The chocobo saddlebag window. |
+
+    **RetainerList usage example**
+
+    ```csharp
+    using LlamaLibrary.RemoteWindows;
+
+    // Wait for the list to appear after interacting with a bell
+    if (!await RetainerList.Instance.WaitTillWindowOpen(10000))
+    {
+        Log.Error("RetainerList did not open in time.");
+        return;
+    }
+
+    Log.Information($"Found {RetainerList.Instance.NumberOfRetainers} retainers.");
+    Log.Information($"Ventures remaining: {RetainerList.Instance.NumberOfVentures}");
+
+    // Select the first retainer by index
+    await RetainerList.Instance.SelectRetainer(0);
+    ```
+  </Accordion>
+
+  <Accordion title="Crafting & Gathering">
+    Windows that appear during crafting turn-ins, collectables, and gathering spiritbond interactions.
+
+    | Class | ATK name | Description |
+    |-------|----------|-------------|
+    | `MasterPieceSupply` | `MasterPieceSupply` | The Rowena collectables hand-in window. |
+    | `CollectablesShop` | `CollectablesShop` | The collectables shop turn-in window. Exposes `RowCount`, `TurninCount`, `SelectJob(int job)`, `SelectItem(int line)`, `Trade()`, `GetItems()`, and `ListItems()`. |
+    | `GatheringMasterpieceLL` | `GatheringMasterpiece` | Spiritbond and masterpiece gathering window wrapper. |
+    | `SatisfactionSupply` | `SatisfactionSupply` | The Custom Deliveries (satisfaction supply) turn-in window. |
+    | `SatisfactionSupplyResult` | `SatisfactionSupplyResult` | The result window shown after a Custom Deliveries turn-in. |
+
+    **CollectablesShop usage example**
+
+    ```csharp
+    using LlamaLibrary.RemoteWindows;
+
+    if (CollectablesShop.Instance.IsOpen)
+    {
+        // Switch to the correct crafting job tab
+        CollectablesShop.Instance.SelectJob(0);
+
+        // Get all available turn-in items
+        var items = CollectablesShop.Instance.GetItems();
+        foreach (var (itemId, line) in items)
+        {
+            Log.Information($"Available: item {itemId} at line {line}");
+        }
+
+        // Select and trade the first item
+        CollectablesShop.Instance.SelectItem(0);
+        CollectablesShop.Instance.Trade();
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Grand Company">
+    Windows for grand company supply, expert delivery, and rank management.
+
+    | Class | ATK name | Description |
+    |-------|----------|-------------|
+    | `GrandCompanyExchange` | `GrandCompanyExchange` | The grand company seal exchange shop. |
+    | `GrandCompanySupplyList` | `GrandCompanySupplyList` | The supply/provisioning list window. Exposes `Close()`, `ClickItem(int index)`, `SwitchToExpertDelivery()`, and `SetExpertFilter(byte filter)`. |
+    | `GrandCompanySupplyReward` | `GrandCompanySupplyReward` | The reward confirmation window after a supply turn-in. Exposes `Confirm()`. |
+    | `GrandCompanyRankUp` | `GrandCompanyRankUp` | The rank-up promotion window. Exposes `Confirm()`. |
+    | `FreeCompanyExchange` | `FreeCompanyExchange` | The free company action purchase window. Exposes `BuyAction(int actionId)`. |
+
+    These windows are used by `GrandCompanyHelper` internally — you generally call the helper methods rather than interacting with the windows directly.
+  </Accordion>
+
+  <Accordion title="Shop & Exchange">
+    General vendor and exchange windows.
+
+    | Class | ATK name | Description |
+    |-------|----------|-------------|
+    | `InclusionShop` | `InclusionShop` | The Allagan tomestone and inclusion shop window. |
+    | `ShopExchangeItem` | `ShopExchangeItem` | Generic item-exchange shop. |
+    | `ShopProxy` | `Shop` | Proxy for the standard vendor shop window. |
+    | `FreeShop` | `FreeShop` | A shop that dispenses items at no cost (used for certain quests). |
+    | `GoldSaucerReward` | `GoldSaucerReward` | The Gold Saucer reward/prize window. |
+    | `TripleTriadCoinExchange` | `TripleTriadCoinExchange` | Triple Triad coin exchange window. |
+    | `AWGrowthFragTrade` | `AWGrowthFragTrade` | Anima Weapon growth fragment trade window. |
+    | `Bank` | `Bank` | The gil deposit/withdrawal window. |
+  </Accordion>
+
+  <Accordion title="Housing">
+    Windows used during housing district navigation and management.
+
+    | Class | ATK name | Description |
+    |-------|----------|-------------|
+    | `HousingMenu` | `HousingMenu` | The main housing district menu. |
+    | `HousingGoods` | `HousingGoods` | The housing furnishing goods menu. |
+    | `HousingSelectBlock` | `HousingSelectBlock` | The ward/plot selection window. |
+    | `HousingSignBoard` | `HousingSignBoard` | The estate signboard interaction window. |
+    | `SubmarinePartsMenu` | `SubmarinePartsMenu` | The submarine parts management window. |
+  </Accordion>
+
+  <Accordion title="Ishgard Restoration">
+    Windows used during Ishgardian Restoration (Firmament) hand-ins and scoring.
+
+    | Class | ATK name | Description |
+    |-------|----------|-------------|
+    | `IshgardHandin` | (see source) | The Ishgard Restoration turn-in window. |
+    | `HWDSupply` | `HWDSupply` | The Heavensward development supply window. |
+    | `HWDScore` | `HWDScore` | The Ishgard Restoration contribution score window. |
+    | `HWDGathereInspect` | `HWDGathereInspect` | The gathering inspection window for restoration submissions. |
+    | `HugeCraftworksSupply` | `HugeCraftworksSupply` | The Huge Craftworks supply window (Dawntrail). |
+    | `BankaCraftworksSupply` | `BankaCraftworksSupply` | Banka craftworks supply window. |
+    | `SharlayanCraftworksSupply` | `SharlayanCraftworksSupply` | Old Sharlayan craftworks supply. |
+  </Accordion>
+
+  <Accordion title="Travel">
+    Windows involved in world travel and data center visits.
+
+    | Class | ATK name | Description |
+    |-------|----------|-------------|
+    | `WorldTravelSelect` | `WorldTravelSelect` | The world selection window for cross-world travel. |
+    | `WorldTravelFinderReady` | `WorldTravelFinderReady` | The readiness confirmation shown before travelling to another world. |
+  </Accordion>
+
+  <Accordion title="Other windows">
+    Additional windows covering quests, social features, and miscellaneous UI.
+
+    | Class | ATK name | Description |
+    |-------|----------|-------------|
+    | `Journal` | `Journal` | The quest journal window. |
+    | `JournalDetail` | `JournalDetail` | The detail view for a quest in the journal. |
+    | `LookingForGroup` | `LookingForGroup` | The Party Finder (LFG) window. |
+    | `NeedGreed` | `NeedGreed` | The Need/Greed/Pass loot roll window. |
+    | `FreeCompany` | `FreeCompany` | The Free Company information window. |
+    | `FreeCompanyChest` | `FreeCompanyChest` | The Free Company chest window. |
+    | `FreeCompanyAction` | `FreeCompanyAction` | The Free Company action list. |
+    | `MateriaAttach` | `MateriaAttach` | The materia melding window. |
+    | `MateriaAttachDialog` | `MateriaAttachDialog` | The confirmation dialog for materia melding. |
+    | `RecommendEquip` | `RecommendEquip` | The recommended equipment selection window. |
+    | `Character` | `Character` | The character sheet window. |
+    | `Achievement` | `Achievement` | The achievements window. |
+    | `Conversation` | `Conversation` | Wraps the in-game conversation/option-select dialog. |
+    | `GuildLeve` | `GuildLeve` | The levequest acceptance window. |
+    | `PartyYesNo` | `PartyYesNo` | The party invite confirmation dialog. |
+    | `InputString` | `InputString` | The text input dialog. |
+  </Accordion>
+</AccordionGroup>
+
+## General usage pattern
+
+Every window follows the same access pattern. Check `IsOpen` before reading data, use `WaitTillWindowOpen` after triggering an action, and call `Close()` when you are done.
+
+```csharp
+using LlamaLibrary.RemoteWindows;
+
+// Check if a window is currently open
+if (RetainerList.Instance.IsOpen)
+{
+    // Read data or send actions
+    int count = RetainerList.Instance.NumberOfRetainers;
+}
+
+// Wait for a window to open after triggering an action (e.g. NPC interaction)
+if (!await CollectablesShop.Instance.WaitTillWindowOpen(8000))
+{
+    Log.Error("CollectablesShop did not open.");
+    return;
+}
+
+// Close a window when done
+GrandCompanySupplyList.Instance.Close();
+```

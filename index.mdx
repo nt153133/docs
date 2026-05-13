@@ -1,0 +1,60 @@
+---
+title: "LlamaLibrary: FFXIV RebornBuddy Support Library"
+description: "LlamaLibrary provides helpers, templates, and FFXIV game wrappers for building RebornBuddy botbases and plugins. Get started in minutes."
+---
+
+LlamaLibrary is a comprehensive C# support library for [RebornBuddy](https://www.rebornbuddy.com/) developers creating botbases, plugins, and quest behaviors for Final Fantasy XIV. It exposes helper functions, template base classes, remote window wrappers, retainer automation, navigation utilities, and shared game data that RebornBuddy does not provide out of the box.
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install LlamaLibrary via updateBuddy or manually into your RebornBuddy folder.
+  </Card>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Build your first botbase or plugin in minutes using LlamaLibrary's template classes.
+  </Card>
+  <Card title="Guides" icon="book-open" href="/guides/create-botbase">
+    Step-by-step walkthroughs for retainer automation, navigation, crafting, and more.
+  </Card>
+  <Card title="API Reference" icon="code" href="/reference/helpers-overview">
+    Full reference for helpers, remote windows, extensions, settings, and logging.
+  </Card>
+</CardGroup>
+
+## What's included
+
+LlamaLibrary ships with everything you need to build robust RebornBuddy projects:
+
+<CardGroup cols={2}>
+  <Card title="Template Base Classes" icon="layer-group" href="/concepts/botbase-vs-plugin">
+    `TemplateBotBase` and `TemplatePlugin` handle boilerplate so you focus on logic.
+  </Card>
+  <Card title="Retainer Automation" icon="robot" href="/guides/retainer-automation">
+    Complete retainer workflow helpers — open lists, select retainers, manage inventory.
+  </Card>
+  <Card title="Navigation & Travel" icon="map" href="/guides/navigation-travel">
+    Teleport, world travel, housing navigation, and pathfinding utilities.
+  </Card>
+  <Card title="Remote Windows" icon="window-maximize" href="/reference/remote-windows">
+    Wrappers for 100+ FFXIV UI windows including shops, crafting, and grand company.
+  </Card>
+  <Card title="Script Conditions" icon="filter" href="/guides/script-conditions">
+    Pre-built condition checks for use in RebornBuddy OrderBot profiles.
+  </Card>
+  <Card title="Extensions & Logging" icon="wrench" href="/reference/extensions">
+    Extension methods for inventory, player state, items, and structured LLogger output.
+  </Card>
+</CardGroup>
+
+## Get started in three steps
+
+<Steps>
+  <Step title="Install LlamaLibrary">
+    Use the updateBuddy plugin for automatic installation and updates, or clone the repository manually into `RebornBuddy\QuestBehaviors\__LlamaLibrary`. See [Installation](/installation) for full details.
+  </Step>
+  <Step title="Reference the NuGet package">
+    Add the `LlamaLibrary` NuGet package to your Visual Studio project for compile-time IDE support and IntelliSense while you develop.
+  </Step>
+  <Step title="Extend a template class">
+    Subclass `TemplateBotBase` or `TemplatePlugin`, override the required members, and start calling LlamaLibrary helpers from your `Run()` method. See [Quick Start](/quickstart).
+  </Step>
+</Steps>

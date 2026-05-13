@@ -1,0 +1,129 @@
+---
+title: "Persistent Settings and Configuration in LlamaLibrary"
+description: "LlamaLibrarySettings and the BaseSettings pattern for persistent JSON-backed configuration in RebornBuddy botbases and plugins built with LlamaLibrary."
+---
+
+LlamaLibrary provides a settings system where every settings class is automatically serialized to a JSON file on disk whenever a property changes, and loaded back when the bot starts. Missing keys are initialized from `[DefaultValue]` attributes before the file is read, so properties are never left in an uninitialized state. Saves are debounced so that rapid property changes do not cause excessive disk writes.
+
+## LlamaLibrarySettings
+
+`LlamaLibrarySettings` is the library's own settings class. It is accessed via `LlamaLibrarySettings.Instance` and covers global library behavior flags.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `LastRevision` | `int` | `0` | Tracks the last library revision number seen. Used internally to detect when the library has updated. |
+| `DisableInventoryHook` | `bool` | `false` | When `true`, disables the inventory update memory patch that LlamaLibrary applies on startup. Set this if you experience inventory-related compatibility issues with other plugins. |
+| `TempDisableInventoryHook` | `bool` | `false` | Temporarily disables the inventory hook for a single session without persisting the preference. Automatically cleared on next load. |
+
+```csharp
+using LlamaLibrary.Settings;
+
+// Read a setting
+bool hookDisabled = LlamaLibrarySettings.Instance.DisableInventoryHook;
+
+// Write a setting — persisted to disk automatically
+LlamaLibrarySettings.Instance.DisableInventoryHook = true;
+```
+
+## BaseSettings pattern
+
+All settings classes in LlamaLibrary — including `LlamaLibrarySettings` — inherit from `BaseSettings<T>`. You use the same pattern to create your own settings for a botbase or plugin.
+
+### Creating your own settings class
+
+Inherit from `BaseSettings<T>`, where `T` is your own class. Use backing fields and call `SetField` in your setters to trigger change notifications and automatic saves. Mark each property with `[DefaultValue(...)]` so that missing JSON keys are initialized to a known value before the file is read.
+
+```csharp
+using System.ComponentModel;
+using LlamaLibrary.Settings.Base;
+
+public class MyBotSettings : BaseSettings<MyBotSettings>
+{
+    private bool _enabled;
+    private int _maxRetainers;
+    private string _targetItem = string.Empty;
+
+    [DefaultValue(true)]
+    public bool Enabled
+    {
+        get => _enabled;
+        set => SetField(ref _enabled, value);
+    }
+
+    [DefaultValue(5)]
+    public int MaxRetainers
+    {
+        get => _maxRetainers;
+        set => SetField(ref _maxRetainers, value);
+    }
+
+    [DefaultValue("")]
+    public string TargetItem
+    {
+        get => _targetItem;
+        set => SetField(ref _targetItem, value);
+    }
+}
+```
+
+### Accessing the singleton
+
+Every `BaseSettings<T>` subclass exposes a static `Instance` property that returns the lazily created singleton. The singleton is initialized on first access, which triggers the load-from-disk logic.
+
+```csharp
+// Read settings
+bool isEnabled = MyBotSettings.Instance.Enabled;
+
+// Change a setting — saved to disk automatically with debouncing
+MyBotSettings.Instance.MaxRetainers = 3;
+```
+
+### Settings file location
+
+Settings are stored as JSON files at:
+
+```
+<RebornBuddy root>/Settings/<ClassName>.json
+```
+
+So `MyBotSettings` would be saved to `Settings/MyBotSettings.json`. The path is computed by `BaseSettings.GetSettingsFilePath(...)` and you do not need to configure it manually.
+
+### Variant base classes
+
+LlamaLibrary also provides scoped variants of `BaseSettings<T>` for cases where you need per-character or per-account settings:
+
+| Class | File path pattern | When to use |
+|-------|-------------------|-------------|
+| `BaseSettings<T>` | `Settings/<ClassName>.json` | Global settings shared across all characters. |
+| `CharacterBaseSettings<T>` | `Settings/<Name>_<ID>/<ClassName>.json` | Per-character settings; instance is cleared automatically on character switch. |
+| `AccountBaseSettings<T>` | `Settings/Account_<AccountId>/<ClassName>.json` | Per-account settings. |
+| `HomeWorldBaseSettings<T>` | `Settings/HomeWorld_<World>/<ClassName>.json` | Per-home-world settings; instance cleared on character switch. |
+
+```csharp
+// Per-character settings example
+public class MyCharacterSettings : CharacterBaseSettings<MyCharacterSettings>
+{
+    private int _lastZone;
+
+    [DefaultValue(0)]
+    public int LastZone
+    {
+        get => _lastZone;
+        set => SetField(ref _lastZone, value);
+    }
+}
+```
+
+### What BaseSettings provides
+
+The base class handles everything automatically once you follow the pattern above:
+
+- **Automatic saves** — any property change triggers a debounced write to the JSON file on disk.
+- **Automatic loads** — settings are read from disk on first access of the `Instance` property.
+- **Default values** — `[DefaultValue]` attributes are applied before the JSON file is read, so properties are always initialized even if the file is missing or was created by an older version.
+- **WPF data binding** — `INotifyPropertyChanged` events fire on every property change, so settings forms built with WPF data binding update automatically.
+- **Collection support** — `ObservableCollection` properties propagate item-level changes to the save mechanism as well.
+
+<Tip>
+  Always decorate every property with `[DefaultValue(...)]`. Without it, properties that are missing from an existing settings file will be left at the C# default value (e.g. `0`, `false`, `null`) rather than your intended default. This can cause surprising behavior when users upgrade a botbase that adds new settings.
+</Tip>

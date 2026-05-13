@@ -1,0 +1,266 @@
+---
+title: "LlamaLibrary Helpers: Inventory, Travel, Crafting & More"
+description: "Static utility classes in LlamaLibrary.Helpers covering inventory queries, aetheryte teleportation, crafting state, grand company interactions, and more."
+---
+
+The `LlamaLibrary.Helpers` namespace is the primary home for static utility classes that handle common FFXIV automation tasks. Each class is focused on a specific domain — inventory queries, aetheryte travel, crafting state inspection, grand company navigation, and so on. You call these methods directly without instantiating any objects, and they integrate with the ff14bot API and LlamaLibrary's memory layer under the hood.
+
+<AccordionGroup>
+  <Accordion title="GeneralFunctions">
+    **Namespace:** `LlamaLibrary.Helpers`
+
+    `GeneralFunctions` is a broad utility class covering inventory queries, player state checks, and common bot housekeeping tasks such as exiting crafting, leaving duties, and dismounting. It is one of the most frequently used helpers across botbases.
+
+    **Key properties**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `static readonly InventoryBagId[] MainBags` | The four primary bag IDs (`Bag1`–`Bag4`). |
+    | `static readonly InventoryBagId[] SaddlebagIds` | The two chocobo saddlebag IDs. |
+    | `static bool IsJumping` | Returns `true` when the player is currently in the air from a jump. |
+    | `static bool InSmallTalk` | Returns `true` when the player is engaged in a smalltalk dialog. |
+
+    **Key methods**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `static IEnumerable<BagSlot> MainBagsFilledSlots()` | Returns all filled bag slots across the four main bags. |
+    | `static ClassJobType QuestClass(int questId)` | Returns the `ClassJobType` required by the specified quest. |
+    | `static async Task StopBusy(bool leaveDuty = true, bool stopFishing = true, bool dismount = true)` | Exits whatever the player is currently doing — closes crafting windows, leaves duties, stops fishing, and dismounts as needed. |
+    | `static async Task SmallTalk(int timeout = 5000)` | Advances and closes a smalltalk dialog within the given timeout. |
+
+    **Example**
+
+    ```csharp
+    using LlamaLibrary.Helpers;
+
+    // Ensure the character is free before starting work
+    await GeneralFunctions.StopBusy(leaveDuty: false, dismount: true);
+
+    // Find all filled slots in the main bags
+    var items = GeneralFunctions.MainBagsFilledSlots()
+        .Where(s => s.RawItemId == targetItemId);
+    ```
+  </Accordion>
+
+  <Accordion title="TeleportHelper">
+    **Namespace:** `LlamaLibrary.Helpers`
+
+    `TeleportHelper` provides aetheryte management — reading the player's unlocked teleport list from memory and triggering teleports, including to housing destinations that are not accessible through the standard aetheryte UI.
+
+    **Key properties**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `static TeleportInfo[] TeleportList` | The player's current list of unlocked aetherytes. Auto-refreshes every 5 minutes or when the home world changes. |
+
+    **Key methods**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `static void UpdateTeleportArray()` | Forces an immediate refresh of the teleport list from game memory. |
+    | `static void CallUpdate()` | Calls the game's internal aetheryte-list update function. |
+    | `static async Task<bool> TeleportToApartment()` | Teleports to the player's apartment, returning `false` if none is found. |
+    | `static async Task<bool> TeleportToPrivateEstate()` | Teleports to the player's private estate, returning `false` if none is found. |
+    | `static async Task<bool> TeleportWithTicket(TeleportInfo info)` | Teleports to the given aetheryte, consuming a teleport ticket if one is available. |
+
+    **Example**
+
+    ```csharp
+    using LlamaLibrary.Helpers;
+
+    // Teleport to apartment
+    if (!await TeleportHelper.TeleportToApartment())
+    {
+        Log.Error("No apartment found — teleport skipped.");
+    }
+
+    // Inspect unlocked aetherytes
+    foreach (var entry in TeleportHelper.TeleportList)
+    {
+        Log.Information($"Aetheryte: {entry.Name}");
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="CraftingHelper">
+    **Namespace:** `LlamaLibrary.Helpers`
+
+    `CraftingHelper` exposes crafting state from game memory with higher reliability than the raw `CraftingManager` API — it reads directly from the DoH last-action struct when a craft is active, and falls back to `CraftingManager` otherwise.
+
+    **Key properties**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `static CraftingStatus Status` | The raw crafting status struct read from memory. |
+    | `static bool AnimationLocked` | `true` when the player cannot perform another crafting action yet. |
+    | `static int Quality` | Current quality value; reads from memory when valid, falls back to `CraftingManager.Quality`. |
+    | `static int Step` | Current step count; reads from memory when valid, falls back to `CraftingManager.Step`. |
+    | `static int HQPercent` | Current HQ probability; reads from memory when valid, falls back to `CraftingManager.HQPercent`. |
+    | `static int Durability` | Current durability; reads from memory when valid, falls back to `CraftingManager.Durability`. |
+    | `static int Progress` | Current progress; reads from memory when valid, falls back to `CraftingManager.Progress`. |
+    | `static uint LastActionId` | The ID of the last crafting action taken. |
+    | `static int ProgressRequired` | The progress required to complete the current recipe. |
+    | `static int DurabilityCap` | Maximum durability for the current recipe. |
+    | `static int QualityCap` | Maximum quality for the current recipe. |
+    | `static bool IsCrafting` | `true` when a craft is active. |
+    | `static bool CanCraft` | `true` when the player is able to begin crafting. |
+    | `static RecipeData CurrentRecipe` | The recipe data for the active craft. |
+
+    **Key methods**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `static bool HasCraftedRecipe(ushort recipeId)` | Returns `true` if the player has crafted the specified recipe at least once. |
+    | `static ushort[] CraftedRecipes()` | Returns an array of all recipe IDs the player has previously crafted. |
+    | `static ushort[] NotCraftedRecipes()` | Returns an array of all recipe IDs the player has never crafted. |
+    | `static bool[] GetCraftedRecipeStatusArray()` | Returns the raw bit-array of crafted/not-crafted status indexed by recipe ID. |
+    | `static bool IsSecretRecipeBookUnlocked(uint key)` | Returns `true` if the given secret recipe book is unlocked. |
+    | `static bool IsSecretRecipeBookUnlockedItem(uint key)` | Looks up a recipe book by item ID and checks if it is unlocked. |
+    | `static bool IsFolkloreBookUnlocked(uint key)` | Returns `true` if the given folklore book is unlocked. |
+    | `static bool IsFolkloreBookUnlockedItem(uint key)` | Looks up a folklore book by item ID and checks if it is unlocked. |
+
+    **Example**
+
+    ```csharp
+    using LlamaLibrary.Helpers;
+
+    if (CraftingHelper.IsCrafting && !CraftingHelper.AnimationLocked)
+    {
+        Log.Debug($"Progress: {CraftingHelper.Progress}/{CraftingHelper.ProgressRequired}");
+        Log.Debug($"Quality: {CraftingHelper.Quality} ({CraftingHelper.HQPercent}% HQ)");
+    }
+
+    if (!CraftingHelper.HasCraftedRecipe(1234))
+    {
+        Log.Information("Recipe 1234 has not been crafted before.");
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="GrandCompanyHelper">
+    **Namespace:** `LlamaLibrary.Helpers`
+
+    `GrandCompanyHelper` provides navigation to grand company headquarters, barracks, and NPC interaction for all three grand companies (Immortal Flames, Order of the Twin Adder, Maelstrom). It automatically selects the correct data based on `Core.Me.GrandCompany`.
+
+    **Key properties**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `static readonly Dictionary<GrandCompany, KeyValuePair<uint, Vector3>> BaseLocations` | Zone IDs and coordinates for each GC headquarters. |
+    | `static readonly Dictionary<GrandCompany, Dictionary<GCNpc, uint>> NpcList` | NPC IDs for each GC NPC type per grand company. |
+    | `static Npc? BarracksNpc` | The barracks entrance NPC for the player's current grand company. |
+    | `static bool IsInBarracks` | `true` when the player is in a GC barracks zone. |
+
+    **Key methods**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `static async Task GetToGCBase()` | Navigates to the player's own grand company headquarters. |
+    | `static async Task GetToGCBase(GrandCompany grandCompany)` | Navigates to a specific grand company's headquarters. |
+    | `static async Task<bool> GetToGCBarracks()` | Navigates to the player's grand company barracks, returning `false` if unavailable. |
+    | `static uint GetNpcByType(GCNpc npc)` | Returns the NPC ID for the given NPC type in the player's GC. |
+    | `static uint GetNpcByType(GCNpc npc, GrandCompany grandCompany)` | Returns the NPC ID for a specific GC. |
+    | `static async Task InteractWithNpc(GCNpc npc)` | Navigates to and interacts with the given NPC in the player's GC. |
+    | `static async Task GoGCRankUp()` | Automates the grand company rank-up promotion dialogue. |
+    | `static async Task GCHandInExpert()` | Performs an expert delivery hand-in of eligible inventory items. |
+
+    **Example**
+
+    ```csharp
+    using LlamaLibrary.Helpers;
+
+    // Navigate to your GC base and interact with the OIC Quartermaster
+    await GrandCompanyHelper.GetToGCBase();
+    await GrandCompanyHelper.InteractWithNpc(GCNpc.OIC_Quartermaster);
+    ```
+  </Accordion>
+
+  <Accordion title="InventoryHelpers">
+    **Namespace:** `LlamaLibrary.Helpers`
+
+    `InventoryHelpers` provides utilities for manipulating inventory item stacks, querying food and medicine items, and combining partial stacks. It also exposes extension methods on `IEnumerable<BagSlot>` for filtering by item category.
+
+    **Key properties**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `static bool IsFCItemBusy` | `true` when a free company chest transfer is in progress. |
+
+    **Key methods**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `static async Task LowerQualityAndCombine(int itemId)` | Lowers the quality of the first HQ stack of `itemId` and merges all NQ stacks together. |
+    | `static async Task CombineStacks(IEnumerable<BagSlot> bagSlotsEnumerable)` | Merges partial stacks of the same item across the supplied bag slots. Skips collectables. |
+    | `static IEnumerable<BagSlot> GetFoodItems(this IEnumerable<BagSlot> bags)` | Filters bag slots to those containing food (`ItemUiCategory.Meal`). |
+    | `static IEnumerable<BagSlot> GetMedicineItems(this IEnumerable<BagSlot> bags)` | Filters bag slots to those containing medicine. |
+    | `static bool ContainsFooditem(this IEnumerable<BagSlot> bags, uint id)` | Returns `true` if any slot contains the specified food item ID. |
+    | `static BagSlot GetFoodItem(this IEnumerable<BagSlot> bags, uint id)` | Returns the first bag slot containing the specified food item ID. |
+
+    **Example**
+
+    ```csharp
+    using LlamaLibrary.Helpers;
+    using ff14bot.Managers;
+
+    var allSlots = InventoryManager.FilledSlots;
+
+    // Get all food items in inventory
+    var food = allSlots.GetFoodItems();
+
+    // Combine partial stacks of item 12345
+    await InventoryHelpers.CombineStacks(
+        allSlots.Where(s => s.RawItemId == 12345));
+    ```
+  </Accordion>
+
+  <Accordion title="Navigation">
+    **Namespace:** `LlamaLibrary.Helpers`
+
+    `Navigation` handles zone travel, NPC approach, and mesh-based movement. It integrates with the ff14bot navigation system and supports both ground and flight movement. See the [Navigation and Travel guide](/guides/navigation-travel) for full usage examples.
+
+    **Key methods (summary)**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `static async Task GetTo(uint zoneId, Vector3 location)` | Teleports to a zone if needed, then navigates to the target position. |
+    | `static async Task<bool> GetToInteractNpc(Npc npc, RemoteWindow window)` | Navigates to and interacts with an NPC, waiting for a target window to open. |
+    | `static async Task FlightorMove(Vector3 location)` | Moves to a location using flight if available, otherwise on foot. |
+    | `static async Task OffMeshMoveInteract(GameObject obj)` | Uses mesh navigation to approach and interact with a game object. |
+  </Accordion>
+
+  <Accordion title="WorldHelper">
+    **Namespace:** `LlamaLibrary.Helpers`
+
+    `WorldHelper` exposes information about the player's current and home world/server, including cross-world travel state.
+
+    **Key properties (summary)**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `static World CurrentWorld` | The world the player is currently on. |
+    | `static World HomeWorld` | The player's home world. |
+    | `static bool IsOnHomeWorld` | `true` when the player is on their home world. |
+  </Accordion>
+
+  <Accordion title="Other notable helpers">
+    The `Helpers` directory contains many additional focused helpers. Some worth knowing about:
+
+    | Class | Purpose |
+    |-------|---------|
+    | `ActionHelper` | Querying and using actions/abilities. |
+    | `BeastTribeHelper` | Beast tribe quest and reputation handling. |
+    | `ChocoboHelper` | Chocobo companion interactions. |
+    | `CurrencyHelper` | Reading currency balances (tomestones, seals, etc.). |
+    | `FreeCompanyActions` | Checking and activating FC buffs. |
+    | `HuntHelper` | Hunt mark location and notification logic. |
+    | `IshgardHandin` | Ishgard Restoration submission logic. |
+    | `JsonHelper` | JSON serialization utilities shared across the library. |
+    | `LootHelper` | Loot roll automation (Need/Greed/Pass). |
+    | `MinionHelper` | Summoning and dismissing minions. |
+    | `OrderbotHelper` | Reading and setting Orderbot profiles. |
+    | `SharedFateHelper` | Shared FATE progress tracking. |
+    | `Timers` | Reusable countdown and polling timers. |
+  </Accordion>
+</AccordionGroup>

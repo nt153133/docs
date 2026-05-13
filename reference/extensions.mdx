@@ -1,0 +1,295 @@
+---
+title: "LlamaLibrary Extension Methods Reference"
+description: "LlamaLibrary.Extensions adds utility methods directly onto ff14bot game objects like BagSlot, LocalPlayer, Item, and ClassJobType."
+---
+
+The `LlamaLibrary.Extensions` namespace contains static extension method classes that attach new functionality directly to existing ff14bot types. Rather than writing wrapper utilities yourself, you can call these methods directly on the objects returned by ff14bot's managers. Add `using LlamaLibrary.Extensions;` to your file and the methods become available on their respective types automatically.
+
+<AccordionGroup>
+  <Accordion title="BagSlotExtensions">
+    **Extends:** `ff14bot.Objects.BagSlot`
+
+    `BagSlotExtensions` is the most comprehensive extension class in LlamaLibrary. It covers inventory manipulation operations that are not exposed in the base ff14bot API — splitting, discarding, desynthing, melding, retainer interactions, saddlebag transfers, and housing storeroom moves.
+
+    **Item manipulation**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `bool Split(this BagSlot bagSlot, int amount)` | Splits `amount` items out of the stack, returns `true` on success. |
+    | `void Discard(this BagSlot bagSlot)` | Discards the item in the slot. |
+    | `void Desynth(this BagSlot bagSlot)` | Desynthesises the item in the slot. |
+    | `bool LowerQuality(this BagSlot bagSlot)` | Converts an HQ or collectable item to NQ. Returns `true` if the quality was lowered. |
+    | `void Reduce(this BagSlot bagSlot)` | Reduces the item (used for gatherer scrip tokens). |
+    | `void UseItemRaw(this BagSlot bagSlot)` | Uses the item in the slot directly via the inventory manager. |
+    | `bool CanTrade(this BagSlot slot)` | Returns `true` if the item is tradeable, not a collectable, and has no spiritbond. |
+    | `string ItemName(this BagSlot bagSlot)` | Returns the localized item name, appending `(HQ)` for high-quality items. |
+
+    **Materia**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `bool HasMateria(this BagSlot bagSlot)` | Returns `true` if any of the five materia slots on the item are filled. |
+    | `int MateriaCount(this BagSlot bagSlot)` | Returns the number of materia affixed to the item. |
+    | `List<MateriaItem> Materia(this BagSlot bagSlot)` | Returns the list of materia items affixed to the slot. |
+    | `void RemoveMateria(this BagSlot bagSlot)` | Removes materia from the item. |
+    | `void ExtractMateria(this BagSlot bagSlot)` | Extracts materia when spiritbond is at 100%. |
+    | `void AffixMateria(this BagSlot Equipment, BagSlot Materia, bool BulkMeld)` | Affixes the materia slot to the equipment slot, optionally using bulk meld. |
+    | `void OpenMeldInterface(this BagSlot bagSlot)` | Opens the meld UI for the slot. |
+
+    **Retainer transfers**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `void RetainerEntrustQuantity(this BagSlot bagSlot, int amount)` | Entrusts `amount` of the item to the current retainer. |
+    | `void RetainerEntrustQuantity(this BagSlot bagSlot, uint amount)` | Uint overload of `RetainerEntrustQuantity`. |
+    | `void RetainerRetrieveQuantity(this BagSlot bagSlot, int amount)` | Retrieves `amount` from the retainer back to inventory. |
+    | `void RetainerRetrieveQuantity(this BagSlot bagSlot, uint amount)` | Uint overload of `RetainerRetrieveQuantity`. |
+    | `void RetainerSellItem(this BagSlot bagSlot)` | Lists the item for sale on the retainer's market slot. |
+    | `async Task<bool> TryEntrustToRetainer(this BagSlot bagSlot, uint moveCount, int waitMs)` | Entrusts and waits for the slot count to change, with ping-aware delay. |
+    | `async Task<bool> TryRetrieveFromRetainer(this BagSlot bagSlot, uint moveCount, int waitMs)` | Retrieves and waits for the slot count to change. |
+    | `async Task<bool> TrySellItem(this BagSlot bagSlot, int waitMs)` | Lists for sale and waits for confirmation. |
+
+    **Saddlebag transfers**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `bool AddToSaddlebagQuantity(this BagSlot bagSlot, uint amount)` | Moves `amount` into the chocobo saddlebag. |
+    | `bool RemoveFromSaddlebagQuantity(this BagSlot bagSlot, uint amount)` | Moves `amount` out of the saddlebag. |
+    | `async Task<bool> TryAddToSaddlebag(this BagSlot bagSlot, uint moveCount, int waitMs)` | Async version that waits for the move to complete. |
+    | `async Task<bool> TryRemoveFromSaddlebag(this BagSlot bagSlot, uint moveCount, int waitMs)` | Async version for removal. |
+
+    **Housing storeroom**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `bool StoreroomReturnToInventory(this BagSlot bagSlot)` | Returns an item from the housing storeroom to inventory. |
+    | `bool InventoryToStoreroom(this BagSlot bagSlot)` | Moves an item from inventory to the housing storeroom. |
+    | `async Task<bool> TryStoreroomReturnToInventory(this BagSlot bagSlot, int waitMs)` | Async version; handles SelectYesno confirmation if needed. |
+    | `async Task<bool> TryInventoryToStoreroom(this BagSlot bagSlot, int waitMs)` | Async version for moving to storeroom. |
+
+    **Free company chest**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `void FcChestMove(this BagSlot sourceBagSlot, BagSlot destBagSlot)` | Moves an item from one slot to another within the FC chest. |
+
+    **Other**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `uint PostingPrice(this BagSlot slot)` | Returns the current market board posting price for the item. |
+    | `byte StainId(this BagSlot bagSlot)` | Returns the dye stain ID applied to the item. |
+    | `void NpcSellItem(this BagSlot bagSlot)` | Sells the item to an NPC shop. |
+    | `void PlaceAetherWheel(this BagSlot bagSlot)` | Places an aether wheel into the active slot. |
+
+    **Example**
+
+    ```csharp
+    using LlamaLibrary.Extensions;
+
+    // Entrust 10 of an item to the current retainer and wait up to 2s for confirmation
+    var slot = InventoryManager.FilledSlots.First(s => s.RawItemId == 12345);
+    bool success = await slot.TryEntrustToRetainer(10, 2000);
+
+    // Check if an equipped piece has materia
+    if (slot.HasMateria())
+    {
+        Log.Information($"Materia count: {slot.MateriaCount()}");
+    }
+
+    // Lower quality before combining
+    if (slot.IsHighQuality)
+    {
+        slot.LowerQuality();
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="LocalPlayerExtensions">
+    **Extends:** `ff14bot.Objects.LocalPlayer` and `ff14bot.Enums.ClassJobType`
+
+    `LocalPlayerExtensions` adds missing player state properties and grand company queries. Note that some members — such as `IsTank()`, `IsHealer()`, `IsMeleeDps()`, and `IsRangedDps()` — extend `ClassJobType` rather than `LocalPlayer` directly, even though they live in this file.
+
+    **Player state**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `static bool IsWalking` | `true` when the player is currently set to walk (not run). |
+    | `bool IsFishing(this LocalPlayer play)` | `true` when the fishing manager is active. |
+    | `bool IsOnFishingBoat(this LocalPlayer play)` | `true` when the player is in The Endeavor fishing zone. |
+    | `Location Location(this LocalPlayer play)` | Returns a `Location` struct combining the current zone ID and world position. |
+    | `IntPtr MinionPtr(this LocalPlayer play)` | Pointer to the active minion companion object. |
+    | `void SetRun(this LocalPlayer play)` | Switches the player to run mode if currently walking. |
+    | `void SetWalk(this LocalPlayer play)` | Switches the player to walk mode if currently running. |
+    | `int CurrentMount(this LocalPlayer player)` | Returns the ID of the current mount, or 0 if unmounted. |
+
+    **Grand company**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `uint GCRank(this LocalPlayer player)` | Returns the player's current grand company rank number. |
+    | `uint GCSeals(this LocalPlayer player)` | Returns the player's current grand company seal count. |
+    | `int MaxGCSeals(this LocalPlayer player)` | Returns the maximum seals the player can hold at their current rank. |
+
+    **Account / identity**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `ulong PlayerId(this LocalPlayer player)` | Returns the player's unique content ID. |
+    | `ulong AccountId(this LocalPlayer player)` | Returns the account ID (cached after first read). |
+    | `World HomeWorld(this Character? character)` | Returns the home world for any `Character` object. |
+
+    **Conditions**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `bool CheckCondition(this LocalPlayer player, byte condition)` | Reads the condition flag at the given byte offset. |
+    | `bool HasPermission(this LocalPlayer player, int permissionId, int excludedCondition1, int excludedCondition2)` | Calls the game's permission check function. |
+
+    **Gear sets**
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `GearSet[] SortedGearSets(this LocalPlayer player)` | Returns all gear sets sorted by item level descending, then by role. |
+    | `GearSet BestCombatGearSet(this LocalPlayer player)` | The highest-item-level DoW (combat) gear set. |
+    | `GearSet BestGatheringGearSet(this LocalPlayer player)` | The highest-item-level DoL (gathering) gear set. |
+    | `GearSet BestCraftingGearSet(this LocalPlayer player)` | The highest-item-level DoH (crafting) gear set. |
+
+    **ClassJobType extensions** (also in this file)
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `bool IsTank(this ClassJobType currentJob)` | `true` for GLA, MRD, PLD, WAR, DRK, GNB. |
+    | `bool IsHealer(this ClassJobType currentJob)` | `true` for CNJ, WHM, SCH, AST. |
+    | `bool IsMeleeDps(this ClassJobType currentJob)` | `true` for PGL, LNC, ROG, SAM, MNK, DRG, NIN, VPR. |
+    | `bool IsRangedDps(this ClassJobType currentJob)` | `true` for ARC, MCH, DNC, BRD. |
+
+    **Example**
+
+    ```csharp
+    using LlamaLibrary.Extensions;
+
+    // Switch to run mode before navigating
+    Core.Me.SetRun();
+
+    // Check GC seal capacity
+    uint current = Core.Me.GCSeals();
+    int max = Core.Me.MaxGCSeals();
+    Log.Information($"Seals: {current}/{max}");
+
+    // Pick the best combat gear set
+    var best = Core.Me.BestCombatGearSet();
+    if (best != null)
+    {
+        Log.Information($"Best combat set: {best.Name} (ilvl {best.ItemLevel})");
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="ClassJobExtensions">
+    **Extends:** `ff14bot.Objects.Item` and `ff14bot.Enums.ClassJobType`
+
+    `ClassJobExtensions` provides equipment affinity checks — determining which jobs can equip a given item — using a compile-time affinity table baked into the class.
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `bool CanEquipItem(this LocalPlayer me, Item item)` | `true` if the player's current job can equip `item`. |
+    | `bool CanEquipItem(this Item item)` | `true` if the player's current job can equip `item`. |
+    | `bool CanEquipItem(this ClassJobType job, Item item)` | `true` if `job` can equip `item`. |
+    | `bool JobCanEquipThisItem(this Item item, ClassJobType job)` | `true` if `job` can equip `item` (alternate call style). |
+    | `static bool JobCanEquipItem(ClassJobType job, Item item)` | Static helper form. |
+
+    **Example**
+
+    ```csharp
+    using LlamaLibrary.Extensions;
+    using ff14bot.Managers;
+
+    var item = DataManager.GetItem(12345u);
+
+    // Can the current job use this item?
+    if (item.CanEquipItem())
+    {
+        Log.Information($"{item.CurrentLocaleName} is equippable by your current job.");
+    }
+
+    // Can Black Mage use it?
+    if (ClassJobType.BlackMage.CanEquipItem(item))
+    {
+        Log.Information("BLM can equip this.");
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="ItemExtensions">
+    **Extends:** `ff14bot.Managers.Item`
+
+    `ItemExtensions` adds two convenience properties to `Item` objects.
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `MyItemRole MyItemRole(this Item item)` | Returns the item's role as the library's `MyItemRole` enum (a more granular role classification than ff14bot's `ItemRole`). |
+    | `string LocaleName(this Item item)` | Returns `CurrentLocaleName`, appending `" (HQ)"` when `IsHighQuality` is `true`. |
+
+    **Example**
+
+    ```csharp
+    using LlamaLibrary.Extensions;
+    using ff14bot.Managers;
+
+    var item = DataManager.GetItem(12345u);
+    Log.Information(item.LocaleName()); // e.g. "Tsai tou Vounou (HQ)"
+    ```
+  </Accordion>
+
+  <Accordion title="RetainerTaskAskExtensions">
+    **Extends:** `ff14bot.RemoteWindows.RetainerTaskAsk` (static utility)
+
+    `RetainerTaskAskExtensions` provides helpers for the venture assignment confirmation window.
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `static bool CanAssign()` | Returns `true` when the Assign button in the RetainerTaskAsk window is clickable. |
+    | `static string GetErrorReason()` | Returns the error label text shown when a venture cannot be assigned (e.g. level too low). |
+
+    **Example**
+
+    ```csharp
+    using LlamaLibrary.Extensions;
+
+    if (!RetainerTaskAskExtensions.CanAssign())
+    {
+        Log.Warning($"Cannot assign venture: {RetainerTaskAskExtensions.GetErrorReason()}");
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="GatheringPointObjectExtensions">
+    **Extends:** `ff14bot.Objects.GatheringPointObject`
+
+    | Signature | Description |
+    |-----------|-------------|
+    | `int Base(this GatheringPointObject node)` | Reads the gathering point base ID from memory. Useful for distinguishing node subtypes (e.g. unspoiled vs. regular). |
+
+    **Example**
+
+    ```csharp
+    using LlamaLibrary.Extensions;
+
+    foreach (var node in GameObjectManager.GameObjects.OfType<GatheringPointObject>())
+    {
+        Log.Debug($"Node base ID: {node.Base()}");
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="OtherExtensions and EnumExtensions">
+    The `Extensions` directory also contains:
+
+    - **`OtherExtensions`** — miscellaneous helpers that do not fit a single type; inspect the source for current contents.
+    - **`EnumExtensions`** — utility methods for working with ff14bot enum types.
+    - **`BagExtensions`** — helpers for `InventoryBag` objects (bags as a whole, rather than individual slots).
+
+    These classes are smaller and evolve frequently. Browse the source at `Extensions/` for the current method list.
+  </Accordion>
+</AccordionGroup>

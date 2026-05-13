@@ -1,0 +1,44 @@
+---
+title: "LlamaLibrary: FFXIV RebornBuddy Development Library"
+description: "LlamaLibrary is a C# support library for RebornBuddy developers building botbases, plugins, and quest behaviors for Final Fantasy XIV."
+---
+
+LlamaLibrary is a C# support library that provides the building blocks RebornBuddy does not expose on its own. If you are writing a botbase, plugin, combat routine, or quest behavior for Final Fantasy XIV, LlamaLibrary gives you the helpers, template base classes, game data wrappers, and automation utilities you need to ship something real without reinventing the wheel.
+
+## What is LlamaLibrary?
+
+RebornBuddy exposes a plugin and botbase API, but many of the things you actually need — interacting with retainers, teleporting to player housing, reading remote game windows, querying script conditions — require direct memory access and client function calls that RebornBuddy does not provide. LlamaLibrary wraps all of that so you can write high-level async C# code instead of managing offsets yourself.
+
+The library lives in your `QuestBehaviors\__LlamaLibrary` folder at runtime. Every RebornBuddy project that depends on LlamaLibrary uses the copy that the user has installed locally, so users always get updates without you shipping a new build.
+
+## Key capabilities
+
+- **Template base classes** — `TemplateBotBase`, `TemplateAsyncBotbase`, and `TemplatePlugin` handle boilerplate setup so you only implement `Run()` and your plugin name.
+- **Retainer automation** — helpers for interacting with retainers, reading inventory, and managing ventures.
+- **Navigation helpers** — `TeleportHelper`, `NavigationHelper`, and `JumpNav` for moving characters through the world, to player housing, and into instances.
+- **Remote window wrappers** — typed C# wrappers around FFXIV's in-game UI windows and agents, so you can open menus, read their state, and click through them programmatically.
+- **Script conditions** — condition helpers for use in quest behavior and orderbot profiles.
+- **Extensions and utilities** — extension methods on common RebornBuddy types, inventory helpers, currency helpers, crafting helpers, and more.
+
+## Explore the docs
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="installation">
+    Install LlamaLibrary via updateBuddy or manually, and add the NuGet package to your project.
+  </Card>
+  <Card title="Quickstart" icon="bolt" href="quickstart">
+    Build your first botbase in minutes using TemplateBotBase.
+  </Card>
+  <Card title="Create a Botbase" icon="code" href="guides/create-botbase">
+    Step-by-step guide to building a complete botbase with settings and logging.
+  </Card>
+  <Card title="Helpers Overview" icon="book-open" href="reference/helpers-overview">
+    Browse the full catalog of helper classes available in LlamaLibrary.
+  </Card>
+</CardGroup>
+
+## NuGet package
+
+When developing a project that depends on LlamaLibrary, add the [LlamaLibrary NuGet package](https://www.nuget.org/packages/LlamaLibrary) to your Visual Studio project. This gives you compile-time type checking and IDE completion without requiring a local RebornBuddy installation on your development machine.
+
+The NuGet package is a **development-time reference only**. At runtime, the code that actually executes comes from the user's installed `QuestBehaviors\__LlamaLibrary` folder — not from the NuGet package. See [Runtime vs NuGet](concepts/runtime-vs-nuget) for a full explanation.

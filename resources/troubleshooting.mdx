@@ -1,0 +1,104 @@
+---
+title: "Troubleshoot LlamaLibrary Installation and Runtime Issues"
+description: "Diagnose and fix common problems with LlamaLibrary installation, startup crashes, runtime exceptions, and update failures in RebornBuddy."
+---
+
+This page helps you identify and resolve the most common problems that arise when using LlamaLibrary. Work through the relevant section for your issue, and check the RebornBuddy log for specific error messages before assuming a cause — the log almost always tells you exactly what went wrong.
+
+<AccordionGroup>
+  <Accordion title="RebornBuddy crashes on startup after installing LlamaLibrary">
+    A startup crash after installing LlamaLibrary is usually caused by one of three things: an incorrect installation path, outdated offsets after a FFXIV patch, or a conflict with a leftover old installation.
+
+    **Check the installation path.** LlamaLibrary must be installed in the `QuestBehaviors` folder, not `BotBases`:
+
+    ```text
+    RebornBuddy
+    └── QuestBehaviors
+        └── __LlamaLibrary     ✓ correct
+    ```
+
+    If you see a copy of LlamaLibrary anywhere inside `BotBases`, remove it. Having it in both locations causes load-order conflicts.
+
+    **Try Safe Mode.** Hold **Shift + Ctrl** while RebornBuddy is starting. Safe Mode skips offset initialization, which lets you confirm whether the crash is related to LlamaLibrary reading game memory. If RebornBuddy loads successfully in Safe Mode, the issue is almost certainly stale offsets from a recent FFXIV patch.
+
+    **Check the log.** Open the RebornBuddy log window and look for the exception message and stack trace. This will tell you exactly which assembly or method caused the crash.
+
+    **Update LlamaLibrary.** If the crash occurred after a FFXIV patch, update LlamaLibrary immediately via updateBuddy or by pulling the latest from [GitHub](https://github.com/nt153133/__LlamaLibrary) and restarting RebornBuddy normally (without Safe Mode).
+  </Accordion>
+
+  <Accordion title="MissingMethodException or 'method not found' at runtime">
+    A `MissingMethodException` means the version of LlamaLibrary installed in the user's `QuestBehaviors\__LlamaLibrary` folder is older than the version you compiled against when building your botbase.
+
+    When you reference the LlamaLibrary NuGet package in your project, you are compiling against the API surface of that specific package version. If a user's installed copy is older and does not yet contain a method or type you called, the .NET runtime throws `MissingMethodException` at the point of first use.
+
+    **Resolution:**
+
+    1. Instruct the user to update LlamaLibrary to the latest version.
+    2. If they use updateBuddy, have them restart RebornBuddy — updateBuddy will pull the latest automatically.
+    3. If they manage LlamaLibrary manually, have them download or pull the latest from [GitHub](https://github.com/nt153133/__LlamaLibrary) and replace their `QuestBehaviors\__LlamaLibrary` folder contents.
+
+    As a best practice, always note in your botbase's readme that users must keep LlamaLibrary up to date, and call out any features that require a recent version.
+  </Accordion>
+
+  <Accordion title="Navigator or navigation provider errors">
+    Navigation-related errors — such as exceptions referencing `ServiceNavigationProvider` or a missing navigation mesh — typically indicate that the RebornBuddy navigation service is not configured or has not been started.
+
+    **Check that navigation is initialized.** If you extend `TemplateBotBase`, `Start()` calls `SetupNavigationProvider()` automatically, which registers `ServiceNavigationProvider` as the active navigation provider. If you are not extending `TemplateBotBase`, or if you are calling navigation helpers before `Start()` has run, navigation will not be available.
+
+    **Confirm the navigation service is running.** In RebornBuddy's settings, ensure the navigation provider is enabled and that the mesh data is present. Without a loaded mesh, movement helpers cannot pathfind.
+
+    **Do not call navigation helpers in constructors or static initializers.** Navigation depends on RebornBuddy's runtime state. Call navigation methods only after the bot has started and the game character is in-world.
+  </Accordion>
+
+  <Accordion title="Retainer list won't open or retainer automation fails">
+    Retainer automation relies on the character being near a summoning bell and on LlamaLibrary's retainer helpers being fully initialized.
+
+    **Confirm the character is near a summoning bell.** The retainer interaction requires proximity to a bell. If the character is too far away, the interaction will fail silently or time out.
+
+    **Check for blocking UI windows.** If any other game UI window is open — such as the inventory, a quest dialogue, or the map — it may prevent the retainer window from opening. Close other windows before initiating retainer automation.
+
+    **Ensure LlamaLibrary is not in Safe Mode.** Retainer helpers read game memory to track retainer state. If LlamaLibrary started in Safe Mode, offset initialization was skipped and these helpers will not function. Restart RebornBuddy normally (without holding Shift + Ctrl and without the `-safemode` flag) after confirming LlamaLibrary is up to date.
+
+    **Check the log for specific exceptions.** The RebornBuddy log will show any exceptions thrown by the retainer helper methods, which will point to the exact failure.
+  </Accordion>
+
+  <Accordion title="updateBuddy isn't updating LlamaLibrary">
+    If updateBuddy is installed but LlamaLibrary is not being updated, work through the following checks:
+
+    **Verify the installation path.** updateBuddy's files must be in `Plugins\updateBuddy` inside your RebornBuddy folder:
+
+    ```text
+    RebornBuddy
+    └── Plugins
+        └── updateBuddy
+            ├── git2-a2bde63.dll
+            ├── LibGit2Sharp.dll
+            ├── Loader.cs
+            └── UpdateBuddy.dll
+    ```
+
+    If the DLLs are in the wrong location or the folder is named differently, RebornBuddy will not load updateBuddy as a plugin.
+
+    **Check internet connectivity.** updateBuddy fetches updates from GitHub. If your machine has no internet access, or if GitHub is blocked by a firewall or proxy, updateBuddy cannot pull new commits.
+
+    **Reinstall updateBuddy.** If the files are in the right place and you have internet access but updates still are not applying, download a fresh copy from [https://loader.updatebuddy.net/UpdateBuddy.zip](https://loader.updatebuddy.net/UpdateBuddy.zip), remove the existing `Plugins\updateBuddy` folder, and extract the new files in its place.
+  </Accordion>
+
+  <Accordion title="Log output from my botbase or plugin is not showing">
+    If you are not seeing log output from your botbase or plugin, check the following:
+
+    **Confirm the RebornBuddy log window is open.** Log messages are written to RebornBuddy's built-in log window. If it is minimized or closed, output will not be visible. Open it from the RebornBuddy UI.
+
+    **Check your `LLogger` initialization.** `LLogger` requires a logger name and an optional color. If you construct it with an empty or null name, output may be suppressed or attributed to the wrong logger. A typical initialization looks like:
+
+    ```csharp
+    private static readonly LLogger Log = new LLogger("MyBotbase", Colors.Aqua);
+    ```
+
+    **Do not call `Log` before `OnInitialize`.** In classes that extend `TemplateBotBase` or `TemplatePlugin`, the `Log` property is initialized automatically — but only after `OnInitialize` runs. If you call `Log` in a static initializer, a field initializer, or a constructor that runs before `OnInitialize`, it will either throw a null reference exception or produce no output. Move any early logging calls into `OnInitialize` or later lifecycle methods.
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  For general questions about how LlamaLibrary works, see the [FAQ page](/resources/faq). To report a bug or open an issue, visit the [LlamaLibrary GitHub repository](https://github.com/nt153133/__LlamaLibrary).
+</Note>

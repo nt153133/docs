@@ -1,0 +1,81 @@
+---
+title: "Botbases vs Plugins: Choose the Right Extension Type"
+description: "Learn the difference between botbases and plugins in RebornBuddy, and how LlamaLibrary provides base classes for building each one."
+---
+
+RebornBuddy supports two main extension types: botbases and plugins. A botbase is the active automation driver you select in the RebornBuddy UI, while a plugin runs alongside any botbase to extend or hook into its behavior. LlamaLibrary provides `TemplateBotBase` and `TemplatePlugin` as the recommended base classes for building each, handling boilerplate setup so you can focus on your automation logic.
+
+## What is a botbase?
+
+A botbase is the primary automation loop that RebornBuddy runs when you press Start. You select it from the botbase dropdown in the RebornBuddy UI, and only one botbase runs at a time. It controls your character's behavior by driving a behavior tree coroutine on every tick.
+
+To create a botbase with LlamaLibrary, extend `TemplateBotBase` and implement its required abstract members:
+
+```csharp
+protected abstract string BotBaseName { get; }
+protected abstract Task<bool> Run();
+
+// Optional overrides:
+protected virtual Type? SettingsForm { get; } = null;
+protected virtual Color LogColor { get; } = Colors.Aqua;
+```
+
+`BotBaseName` sets the name that appears in the RebornBuddy UI and in log output. `Run()` is your main coroutine — it is called on every behavior tree tick and should return `true` while work remains, or `false` to yield.
+
+**`TemplateBotBase` lifecycle:**
+
+- `Start()` — called when the bot starts; sets up `SlideMover` as the player mover and `ServiceNavigationProvider` as the navigation provider, then wraps your `Run()` coroutine in the behavior tree root.
+- `Stop()` — called when the bot stops; tears down the navigation provider and clears the root composite.
+- `OnButtonPress()` — called when the user clicks the botbase's settings button in the UI; instantiates and shows the `Form` type you provide via `SettingsForm`.
+- `Root` — returns the `ActionRunCoroutine` that drives your `Run()` coroutine each tick.
+
+## What is a plugin?
+
+A plugin runs continuously in the background alongside any botbase. It does not replace the active botbase; instead, it hooks into the bot lifecycle to perform additional work — processing inventory, watching for conditions, injecting behavior tree hooks, or integrating with Lisbeth.
+
+To create a plugin with LlamaLibrary, extend `TemplatePlugin` and implement its required abstract member:
+
+```csharp
+public abstract string PluginName { get; }
+
+// Optional overrides:
+protected virtual Type? SettingsForm { get; } = null;
+protected virtual bool RequiresPulseThread { get; } = false;
+protected virtual PulseFlags PulseFlags { get; } = PulseFlags.None;
+```
+
+`PluginName` sets the display name in the RebornBuddy plugins list. Set `RequiresPulseThread` to `true` if your plugin needs the shared `DispatcherTimer` to pulse game state while the bot is not running. Use `PulseFlags` to specify which systems to pulse.
+
+**`TemplatePlugin` lifecycle:**
+
+- `OnInitialize()` — called once when the plugin loads; sets up the logger and collects hook lists from `GetOrderBotHooks()` and `GetLisbethHooks()`.
+- `OnEnabled()` — called when the user enables the plugin; subscribes to `TreeRoot.OnStart` and `TreeRoot.OnStop`, and starts the pulse timer if `RequiresPulseThread` is `true`.
+- `OnDisabled()` — called when the user disables the plugin; unsubscribes from bot events and stops the pulse timer if it was started.
+- `OnBotStart(BotBase bot)` — called when any botbase starts; registers your OrderBot and Lisbeth hooks into the active behavior tree.
+- `OnBotStop(BotBase bot)` — called when the botbase stops; removes all registered hooks.
+- `GetOrderBotHooks()` — override to return a list of `Func<Task<bool>>` coroutines that are injected at the `TreeStart` hook point when any botbase runs.
+- `GetLisbethHooks()` — override to return a list of `Func<Task>` callbacks registered with Lisbeth's hook system if Lisbeth is present.
+
+## Compiled vs interpreted
+
+LlamaLibrary also defines lower-level interfaces for projects that compile to a DLL and expose a typed entry point rather than relying on RebornBuddy's source compilation:
+
+- `ICompiledBotbase` / `IDisposableCompiledBotbase` — for compiled synchronous botbases; includes `GetRoot()`, `Start()`, `Stop()`, `Initialize()`, and optionally `Dispose()`, `Pulse()`, and `OnShutdown()`.
+- `ICompiledAsyncBotbase` / `IDisposableCompiledAsyncBotbase` — for compiled async botbases; replaces `GetRoot()` with `AsyncRoot()` and adds `SetParameters(string param)`.
+- `ICompiledPlugin` — extends `IBotPlugin` and adds an `IExportedApi Api` property for exposing a typed API surface to other plugins.
+
+These interfaces give you fine-grained control over the RebornBuddy extension contract when shipping a precompiled binary.
+
+<Note>
+Most projects should extend `TemplateBotBase` or `TemplatePlugin` rather than implementing the compiled interfaces directly. The base classes handle navigator setup, settings form management, hook registration, and pulse timer coordination for you.
+</Note>
+
+## Comparison
+
+| Feature | Botbase | Plugin |
+|---|---|---|
+| Selected in RebornBuddy UI | Yes | No |
+| Runs own main loop | Yes | No |
+| Can hook into any botbase | No | Yes |
+| Can hook into Lisbeth | No | Yes (via `GetLisbethHooks`) |
+| Base class | `TemplateBotBase` | `TemplatePlugin` |

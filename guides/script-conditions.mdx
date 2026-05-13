@@ -1,0 +1,131 @@
+---
+title: "Script Conditions Reference for OrderBot Profiles"
+description: "Use LlamaLibrary's ScriptConditions.Helpers and ScriptConditions.Extras in RebornBuddy OrderBot XML profiles for inventory checks, client detection, and more."
+---
+
+`LlamaLibrary.ScriptConditions.Helpers` and `LlamaLibrary.ScriptConditions.Extras` are static classes that expose boolean and count-returning methods designed to be evaluated as conditions inside RebornBuddy OrderBot XML profiles. You reference them by assembly-qualified name in the profile XML, and you can also call them from C# code directly in a botbase or plugin.
+
+## Available conditions
+
+### ScriptConditions.Helpers
+
+| Method | Return type | Description |
+|---|---|---|
+| `HasIshgardItem()` | `int` | Count of Ishgard crafting items in inventory that are collectable with collectability > 50. |
+| `HasRarefiedItem()` | `int` | Count of rarefied gathering items in inventory that are collectable with collectability > 50. |
+| `HasIshgardGatheringMining()` | `bool` | `true` if the player has at least 10 of any Ishgard mining gathering item. |
+| `HasIshgardGatheringBotanist()` | `bool` | `true` if the player has at least 10 of any Ishgard botanist gathering item. |
+| `HasIshgardGatheringFisher()` | `bool` | `true` if the player has at least 1 of any Ishgard fisher gathering item. |
+| `IsCNClient()` | `bool` | `true` if the game client's language is Chinese (`Language.Chn`). |
+| `GetSkybuilderScrips()` | `int` | Current Skybuilders' Scrips balance. |
+| `AverageItemLevel()` | `int` | Average item level across all equipped items. |
+| `CurrentItemLevel()` | `int` | Character item level read from memory. |
+| `GilCount()` | `int` | Current gil count in the Currency bag. |
+| `CurrentGCSeals()` | `int` | Current Grand Company seal count for the player's GC. |
+| `MaxGCSeals()` | `int` | Maximum Grand Company seal capacity. |
+| `LLHasItemNQ(int itemID)` | `bool` | `true` if the player has at least one NQ copy of the item. |
+| `LLHasItemHQ(int itemID)` | `bool` | `true` if the player has at least one HQ copy of the item. |
+| `LLHasItemCollectable(int itemID)` | `bool` | `true` if the player has at least one collectable copy of the item. |
+| `HasItemAnywhere(int itemId)` | `bool` | `true` if the item exists anywhere (uses `UIState.HasItemSync`). |
+| `IsPartyInCombat()` | `bool` | `true` if any visible party member other than the player is alive and in combat. |
+| `IsDutyAvailable(int duty)` | `bool` | `true` if the specified duty is unlocked. |
+| `HasDutyBeenCompleted(int duty)` | `bool` | `true` if the specified duty has been completed at least once. |
+| `IsFolkloreBookUnlocked(int tomeId)` | `bool` | `true` if the specified gatherer's folklore tome has been unlocked. |
+| `IsSecretRecipeBookUnlocked(int tomeId)` | `bool` | `true` if the specified crafter's secret recipe book has been unlocked. |
+| `HasMap()` | `bool` | `true` if the player has a treasure map in inventory. |
+| `HasLisbeth()` | `bool` | `true` if Lisbeth has been detected (cached after first async check). |
+
+### ScriptConditions.Extras
+
+| Method | Return type | Description |
+|---|---|---|
+| `NumAttackableEnemies(float dist, params uint[] ids)` | `int` | Count of attackable, targetable enemies within `dist` yalms (optional NPC ID filter). |
+| `IsFateActive(int fateID)` | `bool` | `true` if the specified FATE is currently active in the zone. |
+| `IsAnyFateActive()` | `bool` | `true` if any FATE is active in the zone. |
+| `IsLeveActive(int leveId)` | `bool` | `true` if the specified leve is the active leve director. |
+| `IsLeveComplete(int leveId)` | `bool` | `true` if the specified leve's step is 255 (completed). |
+| `HasLeve(int leveId)` | `bool` | `true` if the player currently holds the leve. |
+| `BeastTribeRank(int tribeId)` | `int` | Current rank with the specified beast tribe. |
+| `DailyQuestAllowance()` | `int` | Remaining daily beast tribe quest allowance. |
+| `LisbethPresent()` | `bool` | `true` if Lisbeth is present in `BotManager.Bots` (cached). |
+| `IsTargetableNPC(int npcId)` | `bool` | `true` if the NPC is visible and targetable in the scene. |
+| `AchievementComplete(int achId)` | `bool` | `true` if the specified achievement has been completed. |
+| `SharedFateRank(int zoneId)` | `int` | Current Shared FATE rank for the given zone. |
+| `HasCaughtFish(int fishId)` | `bool` | `true` if the player has caught the specified fish at least once. |
+| `LLItemCollectableCount(int itemId)` | `int` | Count of collectable copies of an item in inventory. |
+| `CurrentGCRank()` | `int` | The player's current Grand Company rank as an integer. |
+| `HasAtLeastOneItem(params int[] list)` | `bool` | `true` if the player has at least one item from the provided ID list. |
+| `EmoteUnlocked(int Id)` | `bool` | `true` if the emote has been unlocked. |
+| `MinionUnlocked(int Id)` | `bool` | `true` if the minion has been unlocked. |
+| `IsCardUnlocked(string name)` | `bool` | `true` if the Triple Triad card is unlocked by name. |
+| `IsFendingClass()` | `bool` | `true` if the player's current job is a tank. |
+| `IsCastingClass()` | `bool` | `true` if the player's current job is a caster DPS. |
+| `IsHealingClass()` | `bool` | `true` if the player's current job is a healer. |
+| `IsGatheringClass()` | `bool` | `true` if the player's current job is Miner, Botanist, or Fisher. |
+| `IsCraftingClass()` | `bool` | `true` if the player's current job is a Disciple of the Hand. |
+| `IsEnglishClient()` | `bool` | `true` if the game client language is English. |
+| `IsGlobalClient()` | `bool` | `true` if the client region is Global. |
+
+## Using in an OrderBot profile
+
+In an OrderBot XML profile, reference a `ScriptConditions` method by providing the fully-qualified type name and assembly name in the `Condition` attribute. The RebornBuddy scripting engine resolves the method by reflection:
+
+```xml
+<!-- Hand in Ishgard crafting collectables when any are ready -->
+<If Condition="[LlamaLibrary.ScriptConditions.Helpers, LlamaLibrary]HasIshgardItem() > 0">
+  <!-- tags that navigate to and interact with the Ishgard hand-in NPC -->
+</If>
+
+<!-- Only run the botanist gather loop if we have fewer than 10 items -->
+<While Condition="[LlamaLibrary.ScriptConditions.Helpers, LlamaLibrary]HasIshgardGatheringBotanist() == False">
+  <!-- gather tags -->
+</While>
+
+<!-- Skip a block on the CN client -->
+<If Condition="[LlamaLibrary.ScriptConditions.Helpers, LlamaLibrary]IsCNClient() == False">
+  <!-- global-only tags -->
+</If>
+
+<!-- Check for an active FATE using Extras -->
+<If Condition="[LlamaLibrary.ScriptConditions.Extras, LlamaLibrary]IsFateActive(1234)">
+  <!-- FATE handling tags -->
+</If>
+```
+
+The format is `[Namespace.ClassName, AssemblyName]MethodName(args)`. For both classes, the assembly name is `LlamaLibrary`.
+
+<Note>
+ScriptConditions are evaluated inside the OrderBot behavior tree on each tick. They are synchronous — do not use `await` inside them. The `async` overloads like `HasItemCheck` and `UpdateSharedFates` exist for use from C# code only, not from profile XML.
+</Note>
+
+## Calling from code
+
+You can call any `ScriptConditions` method directly from a botbase or plugin without involving the OrderBot XML layer at all. Import the namespace and call the static method:
+
+```csharp
+using LlamaLibrary.ScriptConditions;
+
+// Check for Ishgard crafting items
+if (Helpers.HasIshgardItem() > 0)
+{
+    // navigate to hand-in NPC and submit
+    Log.Information($"Have {Helpers.HasIshgardItem()} items to hand in");
+}
+
+// Check for rarefied gathering items
+if (Helpers.HasRarefiedItem() > 0)
+{
+    Log.Information("Rarefied items in inventory");
+}
+
+// Use Extras to inspect the environment
+if (Extras.IsFateActive(1234))
+{
+    Log.Information("Target FATE is active");
+}
+
+int enemies = Extras.NumAttackableEnemies(20f);
+Log.Information($"{enemies} attackable enemies within 20 yalms");
+```
+
+Calling from code is particularly useful in a botbase `Run()` loop or in an OrderBot hook where you need to branch on inventory state before deciding what action to take.

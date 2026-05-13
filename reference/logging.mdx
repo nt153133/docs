@@ -1,0 +1,135 @@
+---
+title: "Structured Logging in LlamaLibrary with LLogger"
+description: "LLogger gives each LlamaLibrary component its own color-coded log output in the RebornBuddy log window, with level filtering and WPF color tinting."
+---
+
+LlamaLibrary uses `LLogger` — defined in `LlamaLibrary.Logging` — to write structured, color-coded output to the RebornBuddy log window. Each logger instance carries a display name and a WPF `Color`. Every log line is prefixed with `[DisplayName]`, making it easy to identify which component produced a given message even when many components are active simultaneously.
+
+`LLogger` respects RebornBuddy's current log level setting: if the bot is set to `Normal` verbosity, `Verbose` and `Debug` messages are suppressed. `Warning` and `Error` messages always use fixed colors (`Goldenrod` and `OrangeRed` respectively) regardless of the instance color, so they remain visually distinct.
+
+## Creating a logger
+
+Declare `LLogger` as a static field on your class. Pass the display name (typically `nameof(YourClass)`) and a `System.Windows.Media.Color`.
+
+```csharp
+using System.Windows.Media;
+using LlamaLibrary.Logging;
+
+public class MyBotBase
+{
+    private static readonly LLogger Log = new LLogger("MyBotBase", Colors.Aquamarine);
+}
+```
+
+You can also omit the color, in which case the logger defaults to `Colors.Gainsboro`:
+
+```csharp
+private static readonly LLogger Log = new LLogger("MyBotBase");
+```
+
+An optional third parameter sets the minimum log level for this logger instance:
+
+```csharp
+// Only show Debug and above for this component
+private static readonly LLogger Log = new LLogger("MyBotBase", Colors.Aquamarine, LogLevel.Debug);
+```
+
+<Note>
+  If you are using a `TemplateBotBase` or `TemplatePlugin` from the LlamaLibrary template project, a `Log` instance is already created for you with a sensible default. You can call `Log.Information(...)` etc. directly without declaring your own instance.
+</Note>
+
+## Log methods
+
+`LLogger` exposes five logging methods covering the full severity range.
+
+```csharp
+// Informational messages for normal operation
+Log.Information("Starting retainer automation.");
+
+// Debug messages for development diagnostics
+Log.Debug($"Processing slot {slot.Name} (ID: {slot.RawItemId})");
+
+// Verbose messages for very fine-grained tracing
+Log.Verbose($"Sending action 3UL, index {index}");
+
+// Warnings for recoverable or unexpected conditions
+Log.Warning("Low inventory space — fewer than 5 free slots remain.");
+
+// Errors for failures that interrupt normal flow
+Log.Error("RetainerList did not open within the timeout.");
+```
+
+Each method maps to a RebornBuddy log level:
+
+| LLogger method | RebornBuddy level | Default visibility |
+|----------------|-------------------|--------------------|
+| `Verbose(string)` | `LogLevel.Verbose` | Hidden unless bot is at Verbose |
+| `Debug(string)` | `LogLevel.Diagnostic` | Hidden unless bot is at Diagnostic |
+| `Information(string)` | `LogLevel.Normal` | Shown at Normal and above |
+| `Warning(string)` | `LogLevel.Quiet` | Always shown; color: `Goldenrod` |
+| `Error(string)` | `LogLevel.Quiet` | Always shown; color: `OrangeRed` |
+
+There is also an `Exception(Exception exception)` helper that captures the call-site method name and logs it at `Error` level:
+
+```csharp
+try
+{
+    await SomeOperation();
+}
+catch (Exception ex)
+{
+    Log.Exception(ex);
+}
+```
+
+## Colors
+
+The second constructor argument is a `System.Windows.Media.Color`. RebornBuddy renders log lines in this color, giving each component a distinct visual identity. Use any constant from `System.Windows.Media.Colors` or construct a color with `Color.FromRgb(r, g, b)`.
+
+```csharp
+using System.Windows.Media;
+
+// Using a named constant
+private static readonly LLogger Log = new LLogger("MyBot", Colors.MediumPurple);
+
+// Using a custom RGB color
+private static readonly LLogger Log = new LLogger("MyBot", Color.FromRgb(100, 200, 150));
+```
+
+LlamaLibrary's own components each use a distinct color so you can visually separate their output in the log window:
+
+| Component | Color |
+|-----------|-------|
+| `GeneralFunctions` | `Colors.Aquamarine` |
+| `TeleportHelper` | `Colors.MediumTurquoise` |
+| `CraftingHelper` | `Colors.Bisque` |
+| `GrandCompanyHelper` | `Colors.LimeGreen` |
+| `InventoryHelpers` | `Colors.White` |
+| `RetainerList` | `Colors.White` |
+| `BaseSettings` (all) | `Colors.Peru` |
+
+<Tip>
+  Pick a color that is not already used by a LlamaLibrary component so your botbase's output is easy to spot in a busy log. Avoid very dark colors (hard to read on dark backgrounds) and very bright ones (Colors.Yellow can be confused with RebornBuddy's own output).
+</Tip>
+
+## Checking whether a level is enabled
+
+You can guard expensive string interpolations with `IsEnabled` to avoid allocations when the message would be filtered out anyway:
+
+```csharp
+if (Log.IsEnabled(LogLevel.Verbose))
+{
+    Log.Verbose($"Full slot dump: {string.Join(", ", slots.Select(s => s.Name))}");
+}
+```
+
+## Low-level write access
+
+For cases where you need full control over the output color and RebornBuddy log level, use `WriteLog` directly:
+
+```csharp
+// Write at a specific color regardless of LogLevel filtering
+Log.WriteLog(Colors.HotPink, "Custom message", ff14bot.Helpers.LogLevel.Normal);
+```
+
+`WriteLog` also writes to `Console.WriteLine`, so messages appear in debugger output and test runners as well as the RebornBuddy window.

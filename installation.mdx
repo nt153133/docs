@@ -1,0 +1,119 @@
+---
+title: "Installing LlamaLibrary into Your RebornBuddy Setup"
+description: "Install LlamaLibrary automatically with updateBuddy or manually into RebornBuddy, and add the NuGet package to your Visual Studio project."
+---
+
+LlamaLibrary installs into the `QuestBehaviors\__LlamaLibrary` folder inside your RebornBuddy directory. That folder is the runtime source of truth — every botbase and plugin that depends on LlamaLibrary reads code from there when it runs. You can install it automatically using the updateBuddy plugin, which also keeps it up to date, or you can clone the repositories manually if you prefer full control.
+
+## Choose an installation method
+
+<Tabs>
+  <Tab title="Automatic (Recommended)">
+    The easiest way to install LlamaLibrary is to install the **updateBuddy** plugin. updateBuddy clones LlamaLibrary into the correct folder and keeps it current whenever RebornBuddy starts.
+
+    1. Download [UpdateBuddy.zip](https://loader.updatebuddy.net/UpdateBuddy.zip).
+    2. Extract the contents into a new `updateBuddy` folder inside your RebornBuddy `Plugins` directory.
+
+    After extraction, your Plugins folder should look like this:
+
+    ```text
+    RebornBuddy
+    +-- Plugins
+        +-- updateBuddy
+            +-- git2-a2bde63.dll
+            +-- LibGit2Sharp.dll
+            +-- Loader.cs
+            +-- UpdateBuddy.dll
+    ```
+
+    3. Start RebornBuddy. updateBuddy will run automatically, clone LlamaLibrary into `QuestBehaviors\__LlamaLibrary`, and install LlamaUtilities into `BotBases\LlamaUtilities`.
+
+    No further steps are required. updateBuddy handles all future updates as well.
+  </Tab>
+  <Tab title="Manual">
+    If you do not want to use updateBuddy, follow these steps to install LlamaLibrary and its companion repositories by hand.
+
+    <Steps>
+      <Step title="Remove previous versions">
+        Check your `BotBases` folder for any old copies of LlamaLibrary and delete them. Earlier versions were sometimes distributed as botbases rather than quest behaviors, and leaving them in place will cause conflicts.
+      </Step>
+      <Step title="Clone __LlamaLibrary">
+        Download or clone the [__LlamaLibrary repository](https://github.com/nt153133/__LlamaLibrary) from GitHub.
+      </Step>
+      <Step title="Create the QuestBehaviors folder">
+        Inside your RebornBuddy directory, create the folder:
+
+        ```text
+        RebornBuddy\QuestBehaviors\__LlamaLibrary
+        ```
+      </Step>
+      <Step title="Place the library contents">
+        Copy the contents of the cloned `__LlamaLibrary` repository into the folder you just created. The `.cs` source files should be directly inside `QuestBehaviors\__LlamaLibrary`.
+      </Step>
+      <Step title="Clone LlamaUtilities">
+        Download or clone [LlamaUtilities](https://github.com/nt153133/LlamaUtilities) from GitHub.
+      </Step>
+      <Step title="Create the LlamaUtilities botbase folder">
+        Inside `RebornBuddy\BotBases`, create the folder:
+
+        ```text
+        RebornBuddy\BotBases\LlamaUtilities
+        ```
+
+        Then copy the contents of the cloned LlamaUtilities repository into it.
+      </Step>
+      <Step title="Optional: install ExtraBotbases">
+        If you want the additional botbases maintained alongside LlamaLibrary, download or clone [ExtraBotbases](https://github.com/nt153133/ExtraBotbases) and place the contents in:
+
+        ```text
+        RebornBuddy\BotBases\ExtraBotbases
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Expected folder structure
+
+After installation, your RebornBuddy directory should look similar to this:
+
+```text
+RebornBuddy
++-- BotBases
+|   +-- LlamaUtilities
+|   +-- ExtraBotbases      (optional)
++-- Plugins
+|   +-- updateBuddy        (if using automatic install)
++-- QuestBehaviors
+    +-- __LlamaLibrary
+```
+
+## Add the NuGet package for development
+
+When writing a RebornBuddy project in Visual Studio, add the LlamaLibrary NuGet package so your project can resolve types and get IDE completion.
+
+**Using the .NET CLI:**
+
+```bash
+dotnet add package LlamaLibrary
+```
+
+**Using the Visual Studio Package Manager Console:**
+
+```powershell
+Install-Package LlamaLibrary
+```
+
+You can also search for `LlamaLibrary` in the Visual Studio NuGet Package Manager UI and install from there.
+
+<Warning>
+  The NuGet package is a **compile-time reference only**. When a user runs your botbase or plugin, RebornBuddy loads LlamaLibrary from the user's `QuestBehaviors\__LlamaLibrary` folder — not from the NuGet package bundled in your project. Never ship the NuGet DLL as part of a release build. See [Runtime vs NuGet](concepts/runtime-vs-nuget) for details.
+</Warning>
+
+## Safe Mode
+
+If LlamaLibrary fails to initialize — for example, after a game patch that breaks offsets — you can start RebornBuddy in Safe Mode to bypass offset loading and prevent crashes.
+
+<Note>
+  To enable Safe Mode, hold **Shift + Ctrl** while RebornBuddy is starting, or pass `-safemode` on the command line when launching RebornBuddy. A dialog will appear confirming that Safe Mode is active. See [Safe Mode](concepts/safe-mode) for more information.
+</Note>

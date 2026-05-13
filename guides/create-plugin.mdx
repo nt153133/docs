@@ -1,0 +1,111 @@
+---
+title: "Build a RebornBuddy Plugin with TemplatePlugin"
+description: "Create a RebornBuddy plugin using LlamaLibrary's TemplatePlugin base class to inject hooks into any botbase, OrderBot profiles, or Lisbeth's craft cycle."
+---
+
+`TemplatePlugin` is an abstract base class for RebornBuddy plugins that manages hook registration, an optional background pulse timer, and a settings form — letting you focus on your plugin's logic rather than the plugin API boilerplate. Because plugins are independent of any botbase, a `TemplatePlugin` subclass can inject behavior into OrderBot, Lisbeth, or any other botbase running at the time.
+
+<Steps>
+  <Step title="Create a class library project and add the LlamaLibrary reference">
+    Create a .NET Framework class library targeting the version used by RebornBuddy. Add references to `ff14bot.exe` and `LlamaLibrary.dll` from your RebornBuddy installation. The setup is identical to [creating a botbase](/guides/create-botbase), except the output DLL goes into the `Plugins` folder rather than `BotBases`.
+  </Step>
+
+  <Step title="Subclass TemplatePlugin and implement required members">
+    Your class must be `public`, extend `TemplatePlugin`, and implement `PluginName`. Override `LogColor` if you want a distinct color in the RebornBuddy log. Override `OnBotStart` and `OnBotStop` to run code when the bot starts or stops — always call `base` so hooks are properly registered and removed.
+
+    ```csharp
+    using System.Windows.Media;
+    using LlamaLibrary;
+
+    public class ExamplePlugin : TemplatePlugin
+    {
+        public override string PluginName => "ExamplePlugin";
+        protected override Color LogColor => Colors.CornflowerBlue;
+
+        protected override void OnBotStart(BotBase bot)
+        {
+            base.OnBotStart(bot);
+            Log.Information("Bot started");
+        }
+
+        protected override void OnBotStop(BotBase bot)
+        {
+            base.OnBotStop(bot);
+            Log.Information("Bot stopped");
+        }
+    }
+    ```
+
+    `TemplatePlugin` initializes `Log` in `OnInitialize()`. Do not reference `Log` in the constructor of your subclass; it will be `null` at that point.
+  </Step>
+
+  <Step title="Add OrderBot hooks (optional)">
+    Override `GetOrderBotHooks()` to return a list of async delegates. Each delegate is wrapped in an `ActionRunCoroutine` and injected into the `"TreeStart"` hook of the behavior tree when the bot starts. Return `true` from a hook to consume the tick; return `false` to pass through to the next hook or the normal bot behavior.
+
+    See the [OrderBot hooks](#orderbot-hooks) section below for a full example.
+  </Step>
+
+  <Step title="Add Lisbeth hooks (optional)">
+    Override `GetLisbethHooks()` to return a list of `Func<Task>` delegates. These are registered with Lisbeth's hook system under both the base method name and a `_Craft`-suffixed variant, so they run during Lisbeth's craft cycle. Hooks are only registered if Lisbeth is present in `BotManager.Bots`.
+
+    ```csharp
+    public override List<Func<Task>> GetLisbethHooks()
+    {
+        return new List<Func<Task>> { MyLisbethHook };
+    }
+
+    private async Task MyLisbethHook()
+    {
+        // Runs at the start of each Lisbeth craft cycle
+        await Task.Delay(100);
+    }
+    ```
+  </Step>
+
+  <Step title="Build and install">
+    Build in Release mode and copy the DLL into RebornBuddy's `Plugins` folder (or `BotBases`, depending on your distribution convention). Enable the plugin from the Plugins tab in RebornBuddy.
+  </Step>
+</Steps>
+
+## OrderBot hooks
+
+`GetOrderBotHooks()` is called during `OnInitialize()`. The hooks are registered when the bot starts and removed when it stops, so you do not need to manage that lifecycle yourself.
+
+```csharp
+public override List<Func<Task<bool>>> GetOrderBotHooks()
+{
+    return new List<Func<Task<bool>>> { MyHook };
+}
+
+private async Task<bool> MyHook()
+{
+    // Return true to consume the tick and prevent further processing.
+    // Return false to let the behavior tree continue normally.
+    if (SomeCondition())
+    {
+        await DoSomething();
+        return true;
+    }
+
+    return false;
+}
+```
+
+You can return multiple hooks; they are all registered under the `"TreeStart"` hook point and run in the order they appear in the list.
+
+## Pulse thread
+
+Some plugins need to keep game state updated (UI windows, manager data) even when the bot is stopped. `TemplatePlugin` supports this via a shared `DispatcherTimer` that runs on the RebornBuddy UI thread.
+
+Override two properties to opt in:
+
+```csharp
+protected override bool RequiresPulseThread => true;
+protected override PulseFlags PulseFlags => PulseFlags.Windows | PulseFlags.Objects;
+```
+
+When `RequiresPulseThread` is `true`, the timer starts automatically when the bot stops and stops again when the bot starts. The timer interval defaults to 500 ms. Multiple plugins can each declare their own `PulseFlags`; the active set is the union of all enabled plugins' flags.
+
+If you need to temporarily speed up the pulse — for example, during a UI interaction — call `EnterCriticalMode()` and `ExitCriticalMode()`. The interval drops to approximately two frame times while critical mode is active, and returns to normal when all callers have exited it.
+
+For one-off flag additions that should not outlive the current operation, use `AddTemporaryPulseFlag(flags)` and `RemoveTemporaryPulseFlag(flags)` rather than changing `PulseFlags` permanently.

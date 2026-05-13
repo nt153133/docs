@@ -1,0 +1,46 @@
+---
+title: "Runtime Install vs NuGet Package Explained"
+description: "Understand the difference between LlamaLibrary's runtime folder install for end users and the NuGet package used by developers at compile time."
+---
+
+LlamaLibrary is delivered in two distinct forms that serve different purposes. End users install it as a folder inside RebornBuddy, which is compiled at runtime. Developers reference it as a NuGet package to get IDE support while writing code. These two forms are independent of each other, and understanding the distinction is important when building and distributing a botbase or plugin.
+
+## Runtime installation
+
+The source of truth at runtime is the `QuestBehaviors\__LlamaLibrary` folder inside the user's RebornBuddy installation. When RebornBuddy loads, it compiles this folder on the fly and makes the resulting types available to all botbases and plugins. This means the version a user runs is always whatever they have installed locally — not anything bundled with your project.
+
+```text
+RebornBuddy
+└── QuestBehaviors
+    └── __LlamaLibrary
+```
+
+Users should keep this folder up to date. The recommended method is the [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip) plugin, which handles installation and updates automatically. Manual installation is also possible by cloning the repository directly into the correct path.
+
+## NuGet package
+
+The [LlamaLibrary NuGet package](https://www.nuget.org/packages/LlamaLibrary) is a compile-time reference for Visual Studio and other IDEs. It provides type definitions, IntelliSense, and build-time type checking so you can write code against the LlamaLibrary API without errors in your IDE.
+
+To add the package to your project:
+
+```bash
+dotnet add package LlamaLibrary
+```
+
+The package is used only during development. It is not shipped as the runtime copy of LlamaLibrary.
+
+<Warning>
+The version of LlamaLibrary pinned in your NuGet reference is **not** what runs on the user's machine. At runtime, RebornBuddy uses the files in the user's `QuestBehaviors\__LlamaLibrary` folder. If your NuGet version is significantly ahead of or behind the user's installed runtime version, you may encounter missing members, changed signatures, or runtime errors that do not reproduce in your development environment.
+</Warning>
+
+## Implications for your project
+
+Keep the following in mind when building and releasing a LlamaLibrary-based project:
+
+- **Do not ship the LlamaLibrary DLL with your release.** Users already have the runtime copy in their RebornBuddy folder. Including a second copy will cause conflicts.
+- **Always document that LlamaLibrary is a prerequisite.** Instruct users to install or update it via updateBuddy, or to clone the repository manually, before running your botbase or plugin.
+- **Test against the current runtime version.** Your NuGet reference may lag behind or ahead of what most users have installed. Pull the latest `QuestBehaviors\__LlamaLibrary` source and test against it directly to catch incompatibilities before release.
+
+<Tip>
+See the [installation page](/installation) for step-by-step instructions on setting up the runtime copy of LlamaLibrary, including how to use updateBuddy to keep it current.
+</Tip>

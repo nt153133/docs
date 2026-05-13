@@ -1,0 +1,128 @@
+---
+title: "Automate Retainer Tasks with LlamaLibrary"
+description: "Use RetainerRoutine and LlamaLibrary retainer helpers to automate FFXIV retainer workflows: opening bells, iterating retainers, and managing inventory."
+---
+
+LlamaLibrary provides a complete set of retainer automation helpers in the `LlamaLibrary.Retainers` namespace. You can open the retainer list by navigating to a summoning bell, iterate over every active retainer with a delegate that runs per-retainer, inspect inventory slots, and close the list cleanly — all with a handful of method calls.
+
+## Opening the retainer list
+
+`HelperFunctions.OpenRetainerList()` finds the nearest summoning bell, moves to it, interacts with it, and waits for the `RetainerList` window to open. It handles `Talk` dialogs that may appear during the interaction and retries once if the list fails to open on the first attempt.
+
+```csharp
+using LlamaLibrary.Retainers;
+
+bool opened = await HelperFunctions.OpenRetainerList();
+if (!opened)
+{
+    Log.Error("Could not open retainer list — is a summoning bell accessible?");
+    return false;
+}
+```
+
+When you are done, call `HelperFunctions.CloseRetainerList()` to close the UI window and wait up to 15 seconds for it to dismiss:
+
+```csharp
+await HelperFunctions.CloseRetainerList();
+```
+
+You can also call `HelperFunctions.GoToSummoningBell()` if you just want to navigate to a bell without opening the list, or `HelperFunctions.UseSummoningBell()` to navigate and interact in a single call.
+
+## Iterating all retainers
+
+`RetainerRoutine.ReadRetainers()` opens the retainer list, selects each active retainer in turn, runs your delegate, deselects the retainer, and then closes the list. It has several overloads depending on how much context you need in your delegate.
+
+The simplest overload accepts a `Func<Task>` with no arguments — use this when you just need to perform the same action for every retainer without needing to know which one you are on:
+
+```csharp
+using LlamaLibrary.Retainers;
+
+await RetainerRoutine.ReadRetainers(async () =>
+{
+    // This body runs once per active retainer.
+    // The retainer's menu (SelectString) is open when this runs.
+    Log.Information("Processing retainer");
+    await HelperFunctions.RetainerHandleVentures();
+    await Task.Delay(200);
+});
+```
+
+When you need the retainer's data, use the `Func<RetainerInfo, Task>` overload. `RetainerInfo` exposes properties like `Name`, `Unique` (the 64-bit content ID), `Job`, `VentureTask`, and `VentureEndTimestamp`:
+
+```csharp
+await RetainerRoutine.ReadRetainers(async (retainer) =>
+{
+    Log.Information($"Retainer: {retainer.Name}, Job: {retainer.Job}");
+    await Task.Delay(200);
+});
+```
+
+A third overload passes both the `RetainerInfo` and the zero-based retainer index as an `int`. A fourth overload returns a `List<CompleteRetainer>` for collecting structured results from each retainer session.
+
+## Reading retainer inventory
+
+While a retainer's menu is open (inside your `ReadRetainers` delegate), the game exposes the retainer's inventory through RebornBuddy's `InventoryManager`. You can read the retainer's bags directly using the bag IDs defined in `HelperFunctions`:
+
+```csharp
+using ff14bot.Managers;
+using LlamaLibrary.Retainers;
+
+// Inside a ReadRetainers delegate:
+var retainerSlots = InventoryManager
+    .GetBagsByInventoryBagId(HelperFunctions.RetainerBagIds)
+    .SelectMany(b => b.FilledSlots);
+
+foreach (var slot in retainerSlots)
+{
+    Log.Information($"{slot.Item.CurrentLocaleName} x{slot.Count}");
+}
+```
+
+`HelperFunctions.RetainerBagIds` is an array of the seven `InventoryBagId` values that correspond to a retainer's inventory pages (`Retainer_Page1` through `Retainer_Page7`).
+
+If you need a more structured view, `RetainerInventory` is a lightweight dictionary wrapper you can populate by calling `AddItem(BagSlot)` for each slot and then query with `HasItem(trueItemId)` and `GetItem(trueItemId)`:
+
+```csharp
+var inv = new RetainerInventory();
+foreach (var slot in retainerSlots)
+    inv.AddItem(slot);
+
+if (inv.HasItem(someItemId))
+    Log.Information("Retainer has the item");
+```
+
+## Accessing the retainer list
+
+`RetainerList.Instance.OrderedRetainerList` is a collection of `RetainerInfo` structs in the order the player has configured in-game. Each entry has a `Name` string and a `Unique` (`ulong`) content ID. You can use this to inspect who is active before entering a session:
+
+```csharp
+foreach (var retainer in RetainerList.Instance.OrderedRetainerList.Where(r => r.Active))
+{
+    Log.Information($"Active retainer: {retainer.Name} ({retainer.Unique})");
+}
+```
+
+The `Active` property is `true` for retainer slots that have been hired.
+
+## Selecting a specific retainer
+
+If you need to open a specific retainer rather than iterating all of them, use `RetainerRoutine.SelectRetainer(ulong retainerContentId)` with the retainer's `Unique` ID. After you are done, call `RetainerRoutine.DeSelectRetainer()` to close the retainer's task window and return to the retainer list.
+
+```csharp
+ulong targetId = RetainerList.Instance.OrderedRetainerList
+    .First(r => r.Name == "Dalamud").Unique;
+
+await RetainerRoutine.SelectRetainer(targetId);
+// ... interact with the retainer ...
+await RetainerRoutine.DeSelectRetainer();
+```
+
+You can also select by zero-based index with `RetainerRoutine.SelectRetainer(int retainerIndex)`.
+
+<Warning>
+Retainer automation requires a summoning bell to be accessible from the player's current location. `OpenRetainerList()` will attempt to teleport to the cheapest aetheryte zone that contains a known bell if none is visible nearby, but it cannot work inside instanced duties, while crafting, or in zones without a bell or aetheryte connection. Always verify the character is in a suitable location before starting a retainer workflow.
+</Warning>
+
+<Tip>
+LlamaLibrary wraps the game's retainer UI windows as typed remote window objects. For lower-level window access — including `RetainerList`, `RetainerTaskList`, and `RetainerHistory` — see [reference/remote-windows](/reference/remote-windows).
+</Tip>

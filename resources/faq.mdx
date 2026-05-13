@@ -1,0 +1,108 @@
+---
+title: "LlamaLibrary FAQ: Installation, Updates, and Usage"
+description: "Answers to common questions about installing, updating, and building with LlamaLibrary — covering NuGet vs runtime, Safe Mode, updateBuddy, and more."
+---
+
+This page answers the questions that come up most often when building RebornBuddy projects with LlamaLibrary. Whether you are setting up your development environment for the first time, troubleshooting a runtime issue, or trying to understand how the library fits into the broader ecosystem, you should find a clear answer below.
+
+<AccordionGroup>
+  <Accordion title="Do I need to ship LlamaLibrary with my botbase?">
+    No. LlamaLibrary is installed independently by each user into their RebornBuddy folder at `QuestBehaviors\__LlamaLibrary`. You should never bundle or distribute the library alongside your botbase.
+
+    As a developer, you reference the [LlamaLibrary NuGet package](https://www.nuget.org/packages/LlamaLibrary) at development time for compile-time support and IDE tooling. That NuGet package is a development dependency only — it is not the copy that runs at runtime. When a user runs your botbase, RebornBuddy loads LlamaLibrary from the user's own installed copy.
+
+    Instruct your users to install LlamaLibrary via updateBuddy or manually from GitHub before running your botbase.
+  </Accordion>
+
+  <Accordion title="How do I keep LlamaLibrary up to date?">
+    There are two ways to stay current:
+
+    **updateBuddy (recommended):** Install the [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip) plugin into your `Plugins\updateBuddy` folder. updateBuddy automatically fetches and applies the latest version of LlamaLibrary each time RebornBuddy starts, so you never need to check manually.
+
+    **Manual update:** Pull or download the latest from the [GitHub repository](https://github.com/nt153133/__LlamaLibrary) and replace the contents of your `QuestBehaviors\__LlamaLibrary` folder with the new files.
+
+    Updating promptly after every FFXIV patch is especially important, since game patches change memory offsets that LlamaLibrary depends on.
+  </Accordion>
+
+  <Accordion title="Why does my botbase work in Visual Studio but crash at runtime?">
+    This is almost always a version mismatch between the NuGet package you developed against and the LlamaLibrary version installed in the user's RebornBuddy folder.
+
+    For example, if you compiled against a NuGet package that includes a method added in a recent update, but the user's installed `QuestBehaviors\__LlamaLibrary` is older, the runtime will throw a `MissingMethodException` because the method does not exist yet in their copy.
+
+    The fix is for the user to update LlamaLibrary to the latest version — either via updateBuddy or by pulling the latest from GitHub. As a developer, you can reduce confusion by documenting that users must keep LlamaLibrary current and by noting which features require a recent version.
+  </Accordion>
+
+  <Accordion title="What is updateBuddy?">
+    updateBuddy is a RebornBuddy plugin that automatically installs and updates LlamaLibrary. It uses LibGit2Sharp to pull the latest version from GitHub each time RebornBuddy starts.
+
+    To install it, download [UpdateBuddy.zip](https://loader.updatebuddy.net/UpdateBuddy.zip) and extract its contents into your `Plugins\updateBuddy` folder. The expected folder structure is:
+
+    ```text
+    RebornBuddy
+    └── Plugins
+        └── updateBuddy
+            ├── git2-a2bde63.dll
+            ├── LibGit2Sharp.dll
+            ├── Loader.cs
+            └── UpdateBuddy.dll
+    ```
+
+    Once installed, you do not need to manage LlamaLibrary updates manually.
+  </Accordion>
+
+  <Accordion title="Can I use LlamaLibrary with any botbase framework?">
+    No. LlamaLibrary is built specifically for [RebornBuddy](https://www.rebornbuddy.com/) and depends on the `ff14bot` API surface that RebornBuddy exposes. Classes like `TemplateBotBase`, `TemplatePlugin`, and the navigation and retainer helpers all call into RebornBuddy internals directly.
+
+    If you are building a botbase, plugin, combat routine, or quest behavior for RebornBuddy targeting Final Fantasy XIV, LlamaLibrary is a good fit. It is not intended for use with other automation frameworks or games.
+  </Accordion>
+
+  <Accordion title="What is Safe Mode and when should I use it?">
+    Safe Mode is a startup option that skips LlamaLibrary's offset initialization phase. This is useful when RebornBuddy crashes immediately on launch — often after a game patch that invalidated memory offsets — because it lets RebornBuddy load without LlamaLibrary attempting to read game memory.
+
+    You can enable Safe Mode in two ways:
+
+    - **Keyboard shortcut:** Hold **Shift + Ctrl** while RebornBuddy is starting up. LlamaLibrary checks the key state during `PreOffsetWarmup` and enables Safe Mode if both keys are held.
+    - **Command-line flag:** Launch RebornBuddy with the `-safemode` argument.
+
+    When Safe Mode is active, a dialog box appears and a diagnostic message is written to the RebornBuddy log. Note that features depending on game memory — such as retainer helpers and many remote window wrappers — will not work while Safe Mode is enabled. Use it only for troubleshooting, then update LlamaLibrary and restart normally.
+
+    See the [Safe Mode concept page](/concepts/safe-mode) for more detail.
+  </Accordion>
+
+  <Accordion title="Where should I install LlamaLibrary?">
+    LlamaLibrary must be placed in the `QuestBehaviors` folder inside your RebornBuddy installation, not in `BotBases`:
+
+    ```text
+    RebornBuddy
+    └── QuestBehaviors
+        └── __LlamaLibrary
+    ```
+
+    If you previously installed an older version of LlamaLibrary in the `BotBases` folder, remove it before installing the current version. Having copies in both locations will cause conflicts.
+
+    See the [installation guide](/installation) for step-by-step instructions.
+  </Accordion>
+
+  <Accordion title="What is the difference between TemplateBotBase and ICompiledBotbase?">
+    `TemplateBotBase` is an abstract base class you extend when writing a standard RebornBuddy botbase. It handles common lifecycle concerns such as setting up the navigation provider, initializing logging, and wiring up start and stop events. Most botbases built with LlamaLibrary extend `TemplateBotBase`.
+
+    `ICompiledBotbase` is an interface used for compiled DLL entry points — botbases that are distributed as pre-compiled assemblies rather than as source code that RebornBuddy compiles at runtime. If you are shipping a compiled DLL rather than raw `.cs` files, your entry point class implements `ICompiledBotbase`.
+
+    For most use cases — especially during development and for open-source projects — you will use `TemplateBotBase`. See the [botbase vs plugin concept page](/concepts/botbase-vs-plugin) and the [create a botbase guide](/guides/create-botbase) for more.
+  </Accordion>
+
+  <Accordion title="Can I use LlamaLibrary for plugins too?">
+    Yes. LlamaLibrary provides `TemplatePlugin` as a base class for RebornBuddy plugins. It follows the same pattern as `TemplateBotBase`, giving you initialized logging and a consistent structure for your plugin's lifecycle methods.
+
+    Extend `TemplatePlugin` in your plugin's entry-point class the same way you would extend `TemplateBotBase` for a botbase. See the [create a plugin guide](/guides/create-plugin) for a walkthrough.
+  </Accordion>
+
+  <Accordion title="Where can I find example botbases using LlamaLibrary?">
+    Two repositories serve as practical references:
+
+    - **[LlamaUtilities](https://github.com/nt153133/LlamaUtilities)** — A collection of utility botbases maintained alongside LlamaLibrary. This is the primary example codebase and covers a wide range of tasks.
+    - **[ExtraBotbases](https://github.com/nt153133/ExtraBotbases)** — Additional botbases that demonstrate more specialized use cases.
+
+    Both repositories are installed into the `BotBases` folder as described in the [installation guide](/installation). Reading through their source is one of the fastest ways to understand how LlamaLibrary is used in practice.
+  </Accordion>
+</AccordionGroup>
