@@ -5,6 +5,26 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of May 25, 2026
+
+### New features
+
+- **The Finer Miner mini-game support.** A new `MiniGameMiner` remote window lets botbases and plugins drive the Gold Saucer mining mini-game the same way they drive Out on a Limb — pause and resume the oscillating cursor, and trigger the swing button. See the [remote window reference](/reference/remote-windows) for usage.
+- **Difficulty selection for Gold Saucer mini-games.** `MiniGameAimg` now exposes a `SetDifficulty` method with named values (`Cactuar`, `Morbol`, `Titan`), replacing the previous untyped button press. The old `PressButton` call is still available but marked obsolete.
+- **`OutOnALimbDirector` now covers The Finer Miner.** The director reads swing results and round state for both Out on a Limb and The Finer Miner, and `MaxNumberOfSwings` now reads the per-round limit dynamically (10 for Out on a Limb; 4–6 for The Finer Miner depending on difficulty) instead of returning a fixed value.
+
+### Updates
+
+- **Better IntelliSense across the public API.** XML documentation was added to a large set of core types — including `LocalPlayer` extensions, retainer automation classes, `OrderbotHook`, `SnipeManager`, `BagSlot` extensions, core interfaces, and the main library entry points. If you write botbases or plugins against LlamaLibrary, you should now see meaningful tooltips and parameter hints in your IDE without diving into the source. The [helpers overview](/reference/helpers-overview) and [extensions reference](/reference/extensions) reflect the same information.
+
+### Bug fixes
+
+- **`OutOnALimbDirector.SwingResult` no longer misreports an idle round.** A swing result byte of `0` (no swing taken yet) is now handled explicitly and returns a zero result instead of falling through to the `TryAgain` default. Mini-game scripts that polled the director between swings should no longer see spurious `TryAgain` events.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of May 18, 2026
 
 ### Updates
