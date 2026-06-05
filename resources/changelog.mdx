@@ -5,6 +5,22 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of June 1, 2026
+
+### New features
+
+- **Tiisol Ja custom delivery support.** The new Tuliyollal custom delivery client (unlocked via quest 70996) is now a first-class target in the custom delivery helpers. `RunCustomDeliveriesBySelection` accepts a new `doTiisolJa` toggle, the NPC and required quest are registered in the custom delivery resource list, and the Tiisol Ja vendor and five new turn-in item mappings are wired into the gil-shopping helper so crafted hand-ins resolve to the correct vendor automatically. See the [retainer and custom delivery guide](/guides/retainer-automation) for usage.
+- **FFXIV 7.51 support.** Game version numbers and the `GetUiModule` offset pattern have been updated for FFXIV patch 7.51. Any helper that touches the UI module — most remote windows, agents, and UI-driven automation — now resolves correctly on the patched client.
+
+### Updates
+
+- **More reliable offset verification.** The offset system now supports per-offset ambiguity overrides, so patterns that legitimately match more than one location no longer fail verification at startup. Expect fewer false-positive offset errors after FFXIV patches that introduce duplicated code regions.
+- **Expanded IntelliSense coverage.** Another wave of XML documentation landed across the public API, including `Navigation`, the retainer classes, `ItemFinder` and related inventory types, `CollectablesShop`, `Conversation`, `RaceChocoboManager`, `RelicBookManager`, `LocalPlayerExtensions`, `UIState`, `UIInputHelper`, `SnipeManager`, `LibraryClass`, and `AssemblyProxy`. If you write botbases or plugins against LlamaLibrary, your IDE should now surface meaningful tooltips and parameter hints for nearly every commonly used type. The [helpers overview](/reference/helpers-overview), [navigation and travel guide](/guides/navigation-travel), and [extensions reference](/reference/extensions) reflect the same information.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of May 25, 2026
 
 ### New features
