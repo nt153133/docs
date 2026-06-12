@@ -5,6 +5,21 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of June 8, 2026
+
+### New features
+
+- **Deep Dungeon status support.** A new `DeepDungeonStatus` remote window and matching `AgentDeepDungeonStatus` agent let botbases and plugins interact with the in-dungeon status display, including opening the window and casting magicite. This is the first piece of first-class Deep Dungeon support in the library. See the [remote window reference](/reference/remote-windows) for usage.
+- **`CloseHowTos` general helper.** A single `GeneralFunctions.CloseHowTos()` call now closes the full set of tutorial pop-ups — `HowToNotice`, `HowTo`, `PlayGuide`, `ContentsTutorial`, and `JobHudNotice` — so scripts no longer have to handle each window individually. Drop it into any startup or zone-change routine to keep guidance overlays from blocking automation. See the [helpers overview](/reference/helpers-overview) for usage.
+
+### Updates
+
+- **Expanded IntelliSense coverage.** Another wave of XML documentation landed across high-traffic utility code, including the `CustomDeliveries` and `GCDailyTurnins` automation classes plus the `BagExtensions`, `EventNpcExtensions`, `GatheringPointObjectExtensions`, `ItemExtensions`, and `OtherExtensions` extension classes. Your IDE should now show meaningful summaries, parameter hints, and return-value notes for these APIs without having to read the source. The [extensions reference](/reference/extensions) and [helpers overview](/reference/helpers-overview) reflect the same information.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of June 1, 2026
 
 ### New features
