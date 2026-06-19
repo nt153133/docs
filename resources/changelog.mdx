@@ -5,6 +5,22 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of June 15, 2026
+
+### Updates
+
+- **`CloseHowTos` now closes more tutorial windows.** The `GeneralFunctions.CloseHowTos()` helper handles additional tutorial pop-ups, so a single call dismisses more of the guidance overlays that can block automation on first-time content. See the [helpers overview](/reference/helpers-overview) for usage.
+- **Expanded IntelliSense coverage.** Another wave of XML documentation landed across high-traffic public APIs, including the `GilShopping` utility, the `AgentSatisfactionSupply` remote agent and `CustomDelivery` struct, the `SatisfactionSupply`, `SatisfactionSupplyResult`, `InclusionShop`, and `InventoryBuddy` remote windows, the `UIState` helper, the `AgentInventoryBuddy`, `AgentCharacter`, `AgentBagSlot`, `AgentItemDetail`, and `AgentRetainerInventory` remote agents, and the `PointMenuManager`. Your IDE should now surface meaningful tooltips and parameter hints across the Custom Deliveries, currency-shop, inventory, and UI-state surface area. The [helpers overview](/reference/helpers-overview), [remote window reference](/reference/remote-windows), and [retainer and custom delivery guide](/guides/retainer-automation) reflect the same information.
+
+### Bug fixes
+
+- **More reliable housing entrance interaction.** The player now closes the gap to the entrance before interacting, avoiding cases where the interaction menu failed to appear or produced inconsistent results. Any [navigation](/guides/navigation-travel) or [retainer](/guides/retainer-automation) workflow that enters a house should be more reliable.
+- **Correct apartment subdivision detection.** Apartment subdivision is now derived from the plot marker instead of the indoor housing position, which always reported `false` from inside an interior. Housing-aware workflows that branch on subdivision should now resolve apartments correctly.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of June 8, 2026
 
 ### New features
