@@ -5,6 +5,20 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of June 22, 2026
+
+### Updates
+
+- **Expanded IntelliSense coverage.** Another wave of XML documentation landed across the public API, including the `SquadronStatus` and `SquadronTimerData` types, the `ScriptConditions` helpers used in OrderBot profiles, the `ResourceManager` and `ProductPatterns` resource utilities, additional `RemoteAgents` (including the `PointMenu` area), and the FC Aetherial Wheel surface — the `AgentAetherWheel` remote agent, the `AetherWheelSlot` struct, and the `AetherialWheel` remote window. Your IDE should now surface meaningful tooltips and parameter hints across squadron status, script conditions, resource lookups, and aetherial wheel automation. The [helpers overview](/reference/helpers-overview), [remote window reference](/reference/remote-windows), and [script conditions guide](/guides/script-conditions) reflect the same information.
+
+### Bug fixes
+
+- **Fresher retainer data on update.** Cached pointers are now cleared before retainer data is refreshed, so subsequent reads reflect the current game state instead of stale values from the previous update. [Retainer automation](/guides/retainer-automation) workflows that poll retainer state between ventures should see fewer cases of acting on outdated data.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of June 15, 2026
 
 ### Updates
