@@ -5,6 +5,20 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of June 29, 2026
+
+### Updates
+
+- **Expanded IntelliSense coverage.** Another wave of XML documentation landed across the public API, including Island Sanctuary (MJI) agents — `AgentMJIHud` (with the new `InfoPtr` and `CurrentExp` properties surfaced), `AgentMJIPouch`, `AgentMJIGatheringNoteBook`, and `AgentMJIRecipeNoteBook` — the retainer and Triple Triad agents `AgentRetainerCharacter` (including retainer `ILvl`), `AgentRetainerVenture` (venture rewards, experience gain, and task ID), and `AgentTripleTriadCoinExchange` (card-for-MGP exchange), along with the `TripleTriadCoinExchangeCard` struct and the `CustomDeliveryNpc`, `GCShopItemStored`, and `MateriaItem` JSON resource models. Your IDE should now surface meaningful tooltips and parameter hints across Island Sanctuary progression, retainer ventures, Triple Triad card exchanges, and the embedded custom delivery, GC shop, and materia data. The [helpers overview](/reference/helpers-overview), [remote window reference](/reference/remote-windows), and [retainer and custom delivery guide](/guides/retainer-automation) reflect the same information.
+
+### Bug fixes
+
+- **Reliable landing before summoning bell interaction.** `GoToSummoningBell` now confirms the character has landed before attempting to interact with the bell. If landing fails, the character is stopped and dismounted so the interaction can proceed cleanly instead of misfiring mid-air. Any [retainer automation](/guides/retainer-automation) workflow that flies to a bell should now start each session more reliably.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of June 22, 2026
 
 ### Updates
