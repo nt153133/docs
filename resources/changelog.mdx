@@ -5,6 +5,23 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of July 6, 2026
+
+### New features
+
+- **Class/job hotbar and gear set list windows.** Two new remote windows — `Class2JobHotbar` and `GearSetList` — expose the class-to-job transition prompt and the gear set list UI to botbases and plugins. On the class-to-job hotbar, `Transfer` accepts the new job setup, `Wait` defers the transition, and `Cancel` dismisses the prompt; `GearSetList.CreateANewGearSet` opens the new gear set flow. See the [remote window reference](/reference/remote-windows) for usage.
+- **`KillHuntingLogMobs` general helper.** A new `GeneralFunctions.KillHuntingLogMobs()` opportunistically flags nearby active hunting-log targets as a kill Poi as your character passes by, so any grinding, questing, or navigation routine can pick up Hunting Log credit without dedicated targeting logic. It only activates once at least one starting "Way of" quest is complete and skips mobs more than three levels above your class. See the [helpers overview](/reference/helpers-overview).
+- **"South Horn" translator string.** The zone/string translator now recognizes South Horn, so scripts that translate zone names or interact with South Horn NPCs resolve correctly across client languages.
+
+### Updates
+
+- **RebornBuddy reference updated.** LlamaLibrary now builds against the current RebornBuddy release. Rebuild any dependent botbase or plugin against the updated library to stay in sync.
+- **Expanded IntelliSense coverage.** Another wave of XML documentation landed across the public API, including the Dawn Story, HWD Score, and Meld remote agents (Duty Support / New Player content, Ishgardian Restoration scoring, and materia melding), the `AgentFishGuide2`, `AgentBankaCraftworksSupply`, and `AgentSharlayanCraftworksSupply` agents (Fish Guide and the Studium/Firmament collectable turn-ins), and the Free Company, Looking For Group, and Out on a Limb agents. Your IDE should now surface meaningful tooltips and parameter hints across duty support, Ishgardian and Studium collectables, fishing, Free Company, LFG, and mini-game automation. The [helpers overview](/reference/helpers-overview) and [remote window reference](/reference/remote-windows) reflect the same information.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of June 29, 2026
 
 ### Updates
