@@ -5,6 +5,25 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of July 13, 2026
+
+### New features
+
+- **Chocobo companion (Buddy) remote windows.** Two new remote windows — `Buddy` and `BuddySkill` — expose the chocobo companion UI to botbases and plugins. `Buddy` opens the Actions, Skills, and Appearance tabs, and `BuddySkill` reports total SP, per-role levels (Defender, Attacker, Healer), whether the active role can rank up, and lets scripts spend SP to learn the next skill. Automating companion progression no longer requires manual UI clicks. See the [remote window reference](/reference/remote-windows).
+- **`HasEnoughSP` script condition for companion progression.** A new `HasEnoughSP()` script condition returns true when the chocobo companion has enough SP to rank up its currently active role, so OrderBot profiles can gate steps on companion progress directly in XML. See the [script conditions guide](/guides/script-conditions).
+- **`IsOnFreeTrial` player check.** A new `IsOnFreeTrial()` extension on `LocalPlayer` reads the game's Free Trial flag, so scripts can reliably branch behavior for Free Trial accounts and skip content or features those accounts cannot access.
+
+### Bug fixes
+
+- **Farming loops no longer run forever after a target is found.** The kill-target search helper now correctly reports success once a valid mob has been assigned, fixing a case where grinding routines could loop indefinitely instead of proceeding to the next step.
+- **BuddySkill correctly detects the active role.** The BuddySkill window now surfaces the chocobo's currently active role and answers "can this role rank up?" against that role, so callers no longer need to know which role is selected in-game to decide if the companion is ready to learn its next skill.
+- **Buddy tab switching now works reliably.** The Buddy window's tab-switch call was rewritten to use a payload the game actually accepts, so opening the Actions, Skills, and Appearance tabs behaves consistently.
+- **Improved IntelliSense for FC Chest and Housing Signboard agents.** XML documentation was added to `AgentFreeCompanyChest` and `AgentHousingSignboard`, including a note that the signboard's `WinningLotteryNumber` and `LotteryEntryCount` properties currently read from swapped offsets — useful context if your workflow relies on housing lottery data. The [remote window reference](/reference/remote-windows) reflects the same information.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of July 6, 2026
 
 ### New features
