@@ -5,6 +5,30 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of July 20, 2026
+
+### New features
+
+- **Autonomous Squadron mission automation.** A new `GcArmyExpedition` remote window drives the autonomous adventurer squadron mission UI end to end — select a category (Trainee, Routine, or Priority), pick a mission, read the required Physical/Mental/Tactical attributes against the squadron's current totals, check EXP and seal expenditure, open Edit Squad, and deploy. Its counterpart `GcArmyExpeditionResult` now surfaces success, mission name, member count, and squadron EXP awarded, and closes the debrief with `Complete()`. Together with the existing `GcArmyCapture` window (now exposing duty list, selected duty index, and `CanCommence`), botbases and plugins can run the full Command Missions and Priority Missions loop. See the [remote window reference](/reference/remote-windows).
+- **Squadron roster access.** Two new remote windows — `GcArmyMemberList` and `GcArmyMemberProfile` — expose the squadron roster and per-member profile. `GcArmyMemberList` reads all eight member slots (name, class, level, active/on-mission state, Physical/Mental/Tactical, tactic) and lets scripts select a member; the profile window surfaces the individual member's stats and details. See the [remote window reference](/reference/remote-windows).
+- **Challenge Log status.** A new `ContentsNote` remote window reads the weekly Challenge Log — per-row completion flags for all 104 entries, current display page, and selected tab — via a new `AgentContentsNote` remote agent that opens the window on demand. A matching `ChallengeLogComplete(rowId)` [script condition](/guides/script-conditions) lets OrderBot profiles gate steps on any Challenge Log entry.
+- **New Squadron status helpers.** `SquadronStatus` now exposes `HasActiveMission`, `HasReturnedMission`, `MissionRemaining`, `HasActiveTraining`, `HasReturnedTraining`, and `TrainingRemaining`, so scripts can branch on whether the squadron is out on a mission, has one waiting to be handed in, or is mid-training without recomputing timers themselves. A new `SquadronNewRecruitAvailable()` [script condition](/guides/script-conditions) reports when enlistment papers are waiting for review.
+- **Grand Company barracks NPCs.** `GCNpc` gains `Regimen_Board` and `Enlistment_Papers` entries with NPC IDs mapped for all three Grand Companies (Maelstrom, Immortal Flames, Twin Adder). `GrandCompanyHelper.InteractWithNpc` now automatically routes into the instanced barracks for Squadron Sergeant, Regimen Board, and Enlistment Papers targets instead of failing at the outdoor GC base. See the [helpers overview](/reference/helpers-overview).
+- **Triple Triad deck read/write.** A new `TripleTriadDecks` helper reads and writes the five player profile decks by slot — pass five distinct card IDs and a name, and the deck is validated, written, and read back to confirm. See the [helpers overview](/reference/helpers-overview).
+- **`TripleTriadNpcBeaten` UIState check.** A new `UIState.TripleTriadNpcBeaten(residentId)` returns true when the current character has defeated a given Triple Triad NPC at least once, letting scripts skip already-beaten opponents.
+- **Accept the current journal quest.** `JournalDetail` gains `AcceptQuest(questId)`, which clicks Accept for the quest currently displayed in the Journal Detail window — useful when picking up leves and side quests from within a workflow. See the [remote window reference](/reference/remote-windows).
+- **Plugin-owned server profile sources.** A new `IServerProfileSource` interface plus a `ProtectedServerProfileSource` base class let plugins supply OrderBot profiles from their own credentialed source. New `LoadServerProfile.LoadProfile` and `LoadProfileByZone` overloads accept the source, so a plugin can materialize a profile locally (with catalog parsing, XML validation, and per-session caching handled for you) and hand the path to `NeoProfileManager` without exposing credentials to LlamaLibrary. See the [helpers overview](/reference/helpers-overview).
+
+### Bug fixes
+
+- **Rank 1 squadrons can deploy City Patrol.** `GcArmyExpedition.Deploy` and `SelectCategory` now recognize the Trainee Missions tab and Mission ID 0 (City Patrol) as valid, so a freshly formed squadron no longer refuses to deploy its first mission. `SquadronStatus.HasActiveMission` and `HasReturnedMission` also detect the initial Trainee Mission correctly.
+- **Squadron window stays alive across tab switches.** `GcArmyExpedition` string reads now bounds-check and swallow the transient memory error the game raises while replacing addon string storage between tabs, so switching Trainee/Routine/Priority no longer aborts an in-flight Squadron workflow.
+- **Materia reads never throw on unknown types.** `BagSlot.Materia()` now skips materia types that are missing from the local materia table instead of logging an exception, so inventory scans stay clean on newer materia added by future patches. Materia type and level offsets are pinned to the InventoryItem struct layout for more stable reads.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of July 13, 2026
 
 ### New features
