@@ -5,6 +5,29 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of July 27, 2026
+
+### New features
+
+- **Estate auto-demolition status.** A new `EstateDemolitionStatus` helper exposes the estate timer data cached by the Contents Info / Timers agent, so scripts can detect endangered houses without opening or interacting with the Timers window. The one-minute cached snapshot reports per-estate state (scheduled, not scheduled, unknown) and a validated demolition deadline for the free company estate, private estate, and up to two shared estates the current character is a tenant on. `VerifyCancellationAsync(estateType)` polls refreshed client data to confirm a timer was actually cleared instead of assuming success from zoning. Release, China, and Taiwan clients are supported. See the [helpers overview](/reference/helpers-overview).
+- **MGP exchange window.** A new `ShopExchangeCoin` remote window drives the gil-to-MGP exchange UI end to end. `SetAmount(int)` sets the requested MGP amount and refreshes the required gil, `Proceed(int)` completes the exchange, and `Cancel()` dismisses the window. Amounts are clamped to the game's supported range of 1–500. See the [remote window reference](/reference/remote-windows).
+- **Quest-ID-only access to protected profiles.** A new `ProtectedQuestProfileLibrary`, built on a `ProtectedRepositoryResourceClient`, lets plugins request a protected OrderBot quest profile by quest ID alone — the library resolves the catalog path (with legacy fallback), fetches the file through the plugin's own authenticated provider, validates size and SHA-256, and returns the XML or the inner Order XML. Content is cached per credential and per catalog SHA, and the credential can be rotated without leaking cached bytes. Callers never see repository credentials or layout. See the [helpers overview](/reference/helpers-overview).
+
+### Bug fixes
+
+- **Inn room retirement now works in every client language.** `NavigationHelper.GoToInnRoom` no longer relies on a hard-coded English "Retire to an inn room" line and instead selects the localized entry (English, Japanese, French, German, Simplified and Traditional Chinese), so inn workflows are reliable on non-English clients.
+- **Squadron deployment no longer stalls after Edit Squad.** `GcArmyExpedition.Deploy` no longer refuses to fire when the addon's advisory `CanDeploy` flag is momentarily false after returning from Edit Squadron — the confirmation window is now treated as the authoritative validation, matching what the visible Deploy button already accepted.
+- **Beast tribe reputation reads updated for global patch 7.5.** `BeastTribeHelper.GetBeastTribes` now reads the current `BeastReputation` offset (`0xCE8`) on the global client and keeps the previous `0xCA8` for Taiwan, and the underlying `BeastTribeExd` currency field was widened to `uint` to match the new client layout. Reputation and rank reads no longer return garbage after 7.5.
+- **Out on a Limb director aligned across regions.** The `MiniGameNumberArrayIndex` used by `OutOnALimbDirector` is now `104` on both global and Taiwan clients after the TC 7.2 update brought the layouts in sync.
+- **Triple Triad "NPC beaten" lookup restored.** The `UIState.TripleTriadNpcBeaten` offset pattern was updated to match the current client, so `TripleTriadNpcBeaten(residentId)` (and any callers that skip already-beaten opponents) returns correct results again.
+- **Materia read patterns restored.** The `BagSlotMateriaType` and `BagSlotMateriaLevel` offsets were reverted from hard-coded constants back to signature-scanned patterns, so materia reads keep working across future client shifts instead of silently reading the wrong bytes.
+- **Taiwan client patterns updated for patch 7.2.** A broad refresh of TC offset patterns across the Inventory Manager, Grand Company turn-in, Desynth lock, Teleport helper, UI input, Housing Signboard, Achievements, Retainer Ventures, Satisfaction supplies, Hunts, Item Finder, Looking For Group, Race Chocobo Manager, Request helper, Shop Proxy, Free Company info, and more brings the Taiwan client back in sync with the global signature set.
+- **`Lisbeth.IsProductKeyValid` awaits directly.** The wrapper no longer double-wraps the call through `Coroutine.ExternalTask` since Lisbeth handles that internally, avoiding an unnecessary coroutine hop on every product-key validity check.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of July 20, 2026
 
 ### New features
