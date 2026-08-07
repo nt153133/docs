@@ -5,6 +5,23 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of August 3, 2026
+
+### Updates
+
+- **Actionable Duty Finder queue errors.** `DutyManager.CanQueue` now decodes the game's native queue-restriction flags into meaningful reasons (for example, "equipped average item level below the duty requirement" when restriction flag `16` is set) instead of the previous sequential 1/2/3 codes. Multiple restrictions are reported together as combinable flags, the raw value is preserved, and unknown future bits are surfaced for diagnostics so scripts can tell users exactly why a duty won't queue.
+- **Stability pass on recent offsets.** Recently added memory reads have been moved from hardcoded, wrapper-local layouts to signature-scanned patterns centralized in the offset system, covering the `ShopExchangeCoin` MGP exchange nodes, `GcArmyExpedition` squadron state, `Buddy` and `CompanionInfo` chocobo fields, and the `AgentContentsInfo` estate timer arrays. The Buddy pattern has a dedicated Taiwan override for the structurally different TC constructor. Expect fewer breakages on these surfaces after future client updates. See the [remote window reference](/reference/remote-windows) and [helpers overview](/reference/helpers-overview).
+- **Hardened MGP exchange offsets.** The `ShopExchangeCoin` window's call-pattern anchors have been replaced with operand-masked signatures that survive minor client shifts, and the underlying agent is now discovered through a cacheable vtable anchor instead of rescanning at every RebornBuddy startup. The offset cache version has been bumped so cached values refresh on first launch. See the [remote window reference](/reference/remote-windows).
+
+### Bug fixes
+
+- **Estate offset startup errors resolved.** `EstateStatusArray` and `EstateDeadlineArray` are fixed structure-layout constants rather than signatures. Offset discovery now excludes literal constant fields from cache restoration and pattern resolution, eliminating the `No attribute found`, `Not Found`, and `Cannot set a constant field` errors some users saw at startup after the initial estate demolition helper landed.
+- **Minion `BaseId` reads restored.** `GameObject.BaseId` for minions was reading the wrong location after the game's post-GimmickId layout change. The read has been re-anchored to a semantic signature that resolves the current layout, so minion identification works again.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of July 27, 2026
 
 ### New features
