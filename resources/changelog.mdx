@@ -5,6 +5,22 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of August 10, 2026
+
+### New features
+
+- **Release channel and runtime lanes in the compiled loader.** `CompiledLoader` (the base class powering the auto-updater used by LlamaLibrary-based botbases and plugins) can now request builds by release channel (`Stable` or `Beta`) and by runtime lane (`net8` or `net10`, auto-detected from the running `Environment.Version`). When enabled, the loader adds the channel, runtime, and packaged identity to its version, download, and check requests, reads `X-Release-Channel`, `X-Release-Runtime`, and `X-Release-Source` back from the update server, and logs both the requested and resolved release so you can see exactly which build was served. Product authors flip this on by overriding `ReleaseChannelsEnabled` in their loader subclass and marking the selector line with `// LL_RELEASE_CHANNEL`; end users still let updateBuddy or RebornBuddy pull the update as usual.
+- **`.NET 10` build alongside `.NET 8`.** LlamaLibrary now builds both `net8.0-windows` and `net10.0-windows` from the same source, each against the matching `RebornBuddy.ReferenceAssemblies` version. This is what lets the new runtime lane above actually deliver different DLLs to RebornBuddy on .NET 8 versus on .NET 10 without maintaining a separate branch.
+
+### Updates
+
+- **`NumAttackableEnemies` accepts `int[]` NPC IDs.** [`Extras.NumAttackableEnemies`](/guides/script-conditions) now has an `int[]` overload alongside the existing `uint[]` one and forwards to the `uint` implementation. OrderBot XML profiles and C# callers that were passing signed integer NPC IDs no longer need to cast. The same count of attackable, targetable enemies within `dist` yalms is returned either way.
+- **New Lisbeth `SourceType`: `GrandCompanyExchange`.** The Lisbeth JSON `SourceType` enum now includes `GrandCompanyExchange` (appended after `TomestoneExchange`), so Lisbeth JSON configs can model items sourced through Grand Company seal exchange. Existing serialized values keep working. Nothing was renumbered or renamed.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of August 3, 2026
 
 ### Updates
