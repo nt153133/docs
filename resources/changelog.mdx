@@ -14,8 +14,8 @@ LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patc
 
 ### Updates
 
-- **`NumAttackableEnemies` accepts `int[]` NPC IDs.** [`Extras.NumAttackableEnemies`](/guides/script-conditions) now has an `int[]` overload alongside the existing `uint[]` one and forwards to the `uint` implementation. OrderBot XML profiles and C# callers that were passing signed integer NPC IDs no longer need to cast — the same count of attackable, targetable enemies within `dist` yalms is returned either way.
-- **New Lisbeth `SourceType`: `GrandCompanyExchange`.** The Lisbeth JSON `SourceType` enum now includes `GrandCompanyExchange` (appended after `TomestoneExchange`), so Lisbeth JSON configs can model items sourced through Grand Company seal exchange. Existing serialized values keep working — nothing was renumbered or renamed.
+- **`NumAttackableEnemies` accepts `int[]` NPC IDs.** [`Extras.NumAttackableEnemies`](/guides/script-conditions) now has an `int[]` overload alongside the existing `uint[]` one and forwards to the `uint` implementation. OrderBot XML profiles and C# callers that were passing signed integer NPC IDs no longer need to cast. The same count of attackable, targetable enemies within `dist` yalms is returned either way.
+- **New Lisbeth `SourceType`: `GrandCompanyExchange`.** The Lisbeth JSON `SourceType` enum now includes `GrandCompanyExchange` (appended after `TomestoneExchange`), so Lisbeth JSON configs can model items sourced through Grand Company seal exchange. Existing serialized values keep working. Nothing was renumbered or renamed.
 
 <Tip>
   Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
