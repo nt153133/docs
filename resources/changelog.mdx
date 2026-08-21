@@ -5,6 +5,26 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of August 17, 2026
+
+### New features
+
+- **`FramePump` and `IsolatedCoroutine` helpers for UI-thread reads.** Two new helpers in `LlamaLibrary.Helpers.Frames` let plugin panels and other UI-thread code run game-memory reads and injected calls safely without stacking their own frame locks. `FramePump` centralizes work on one dedicated background thread and services N callers inside a single shared `AcquireFrame(true)` scope per tick, with `RunAsync`, `RunAsync<T>`, recurring subscriptions, and `PulseFromBotThread` so panels keep updating while the bot is stopped and stay fresh while it runs. `IsolatedCoroutine` runs a whole coroutine to completion on a dedicated worker while the bot is stopped — each `Resume()` holds a hard frame lock at ~30 ticks/sec — without ever starting `TreeRoot`, so third-party plugins never see spurious `OnStart`/`OnStop`. See the [helpers overview](/reference/helpers-overview).
+
+### Updates
+
+- **RebornBuddy `.NET 10` reference assemblies bumped to `1.0.9029-rc.1`.** The `net10.0-windows` build now targets `RebornBuddy.ReferenceAssemblies` `1.0.9029-rc.1` (up from `1.0.9024-rc.1`), keeping the .NET 10 lane aligned with the current RebornBuddy beta. The `net8.0-windows` build is unchanged. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip) on the .NET 10 beta lane, you'll pick this up on the next start; see [Installation](/installation).
+- **Quieter, more accurate assembly-resolve logging.** `AssemblyProxy`'s `AssemblyResolve` handler no longer logs every miss immediately. It now waits three seconds, checks whether another resolver (packed, embedded, sidecar) satisfied the load, and only then logs, so real failures still surface but transient probes stay quiet. IronPython namespace probes (`ScriptManager.IronPython`) are demoted to verbose because the interpreter tries `Assembly.Load` for every dotted import path before falling back to scanning loaded assemblies. Log lines also now identify the requesting assembly and requested version.
+- **Cleaner agent-registration logs at startup.** `OffsetManager` no longer prints a per-agent "Trying to add" line while wiring the RemoteAgents assembly. Successful registrations are summarized as a single `Added N agents` line, and only genuine failures log at Error. Expect a much shorter startup log without any behavior change.
+
+### Bug fixes
+
+- **Reverted last week's `int[]` overload of `NumAttackableEnemies`.** [`Extras.NumAttackableEnemies`](/guides/script-conditions) is back to only the `uint[]` NPC-ID signature. OrderBot XML profiles are unaffected (the XML binder already coerces integer literals to `uint`), but C# callers that adopted the `int[]` overload added the previous week must pass `uint[]` again or cast at the call site.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of August 10, 2026
 
 ### New features
