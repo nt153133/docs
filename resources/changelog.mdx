@@ -5,6 +5,18 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of August 24, 2026
+
+### Updates
+
+- **More reliable inventory change detection.** The inventory update hook behind `InventoryWatcher` was reworked. The injected code now increments an atomic counter on every inventory update instead of stamping a millisecond timestamp, so multiple updates that land within the same millisecond all fire the `InventoryUpdated` event rather than being collapsed into one. The hook's detour is also allocated within guaranteed reach of the patch site, and the assembled patch is size-validated before being written, so the hook installs consistently across sessions.
+- **Safer startup when the inventory hook can't initialize.** If the inventory update patch fails to initialize, LlamaLibrary now fully cleans up the partial hook (freeing its memory and restoring the original code), sets [`TempDisableInventoryHook`](/reference/settings) for the session, and logs a clear error instead of leaving a half-applied patch in place. The watcher stops logging a diagnostic line on every pulse while the hook is disabled, so logs stay quiet.
+- **RebornBuddy `.NET 10` reference assemblies moved to `1.0.904`.** The `net10.0-windows` build now targets `RebornBuddy.ReferenceAssemblies` `1.0.904`, replacing the `1.0.9029-rc.1` prerelease. The `net8.0-windows` build is unchanged. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip) on the .NET 10 lane, you'll pick this up on the next start; see [Installation](/installation).
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of August 17, 2026
 
 ### New features
