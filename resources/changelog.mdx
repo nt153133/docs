@@ -5,6 +5,17 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of August 31, 2026
+
+### New features
+
+- **Shared retainer session broker.** A new `RetainerSessionBroker` lets two or more products that both want retainer work share one summoning-bell trip instead of racing for it. Previously, whichever product reached the bell first would collect and reassign ventures, silently breaking the other's trigger or leaving it to make a wasted trip on stale data. Products register an `IRetainerSessionParticipant` and stop navigating to the bell themselves; any scheduler can call `RunIfWanted()`, and if any participant wants a session, every participant is called for every retainer visited. Each session takes one shared retainer snapshot so no participant's view is corrupted by another's actions, and capability claims (Ventures, Gil, Entrust, Pricing, Posting) resolve by participant priority, lowest wins. See the [retainer automation guide](/guides/retainer-automation) and [helpers overview](/reference/helpers-overview).
+- **Broker sessions are self-policing.** A participant that fails three consecutive callbacks is retired and logged once with the failing stage, so one misbehaving plugin cannot stall everyone else's retainer runs; it re-enters on its next registration. Stopping the bot mid-session unwinds the trip cleanly instead of continuing to drive retainer windows. The broker also measures ping before each session, so participants that pace their window interaction against current latency (for example, posting market items) behave correctly inside a session. The `IRetainerSessionParticipant` interface is frozen and evolves additively only, so plugins compiled against it keep loading as LlamaLibrary updates.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of August 24, 2026
 
 ### Updates
