@@ -5,6 +5,17 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of September 7, 2026
+
+### Bug fixes
+
+- **Inclusion Shop purchases now buy the item you asked for.** `InclusionShop.BuyItem` (and every helper that goes through it, including `InclusionShopHelper.BuyItem` and the `BuyInclusionShopItem` tag in LlamaUtilities) previously miscounted rows whenever a shop entry offered two items on one row, such as a Paladin sword-and-shield pairing. After that row, every following item's index was one line short, so calls bought the item listed just above the one requested, and the row immediately after the two-item row could not be seen at all. `AgentInclusionShop.ShopItems` now numbers each entry by the line the shop window shows, so `BuyItem(n)` always matches the line in the list. Verified against all 83 sub-lists (1141 rows) at Rowena's representative in Foundation. See [Remote windows](/reference/remote-windows).
+- **Regional game patch versions corrected for September 2026.** The regional patch table used by scripts and gating checks was reporting stale versions, which hid patch-gated features (for example, Beastmaster) on current clients. Global, China, and Korea are now reported as `7.56` and TC as `7.2`, verified against the official publisher pages on September 11, 2026. Script conditions such as [`IsGlobalClient()`](/guides/script-conditions) continue to work as before.
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of August 31, 2026
 
 ### New features
