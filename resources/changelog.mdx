@@ -5,6 +5,16 @@ description: "Track LlamaLibrary updates, learn how to stay current after FFXIV 
 
 LlamaLibrary is actively maintained and updated alongside Final Fantasy XIV patches and RebornBuddy releases. Because LlamaLibrary reads game memory directly, it must be updated whenever the game changes the internal structures it depends on. Staying current is not optional — an outdated installation can cause crashes, broken behavior, or silent failures in any botbase or plugin that depends on the library.
 
+## Week of October 19, 2026
+
+### Bug fixes
+
+- **Scrip shop window references no longer conflict.** LlamaLibrary now refers to its own Collectables Shop, Inclusion Shop, and shop exchange dialog windows by explicit name. Ambiguous window names could otherwise break the build. Collectable turn-ins and Inclusion Shop purchases keep working as before. See [Remote windows](/reference/remote-windows).
+
+<Tip>
+  Update LlamaLibrary to pick up this week's changes. If you use [updateBuddy](https://loader.updatebuddy.net/UpdateBuddy.zip), the update is applied automatically on the next RebornBuddy start.
+</Tip>
+
 ## Week of September 7, 2026
 
 ### Bug fixes
